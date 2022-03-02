@@ -5,9 +5,9 @@ account: boris-uva
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 5724248
-bundleId: 5629848
+bundleId: 5630574
 url: https://boris-uva.shinyapps.io/likelihood_surfaces/
-when: 1646160440.85572
-lastSyncTime: 1646160440.85573
+when: 1646173446.24648
+lastSyncTime: 1646173446.24649
 asMultiple: FALSE
 asStatic: FALSE

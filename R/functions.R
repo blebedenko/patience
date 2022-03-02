@@ -346,132 +346,78 @@ negLogLikelihoodFull <- function(params,RES){
 #' @return The negative log-likelihood at the point provided.
 #' @export
 #'
-negLogLikelihoodMean<- function(params,RES,dati){
-  if (is.null(dati) && !is.null(RES)){
-    W <- RES$Wj
-    Q.trans <- RES$Q.trans
-    IT.times <- RES$IT.times
-    Transitions <- c(0,cumsum(IT.times))
-    A <- RES$A
-    A_tilde <-c(0,cumsum(A))
-    A_tilde <- A_tilde[-length(A_tilde)]
-    X <- RES$Xj
-    Q <- RES$Qj
-    Pl <- RES$Pl
-    Y <- RES$Yj
-    # data from RES
-    A_i = A[-1];
-    A_tilde_i = cumsum(A_i);
-    W_i = W[-1]
-    w_i = W[-length(W)];
-    x_i = X[-length(X)]
+negLogLikelihoodMean<- function(params,dati){
 
-  }
-  # params is a vector of (lambda_bar,alpha,theta)
-  if(!is.null(dati)){
-    A <- dati$A
-    W <- dati$W
-    X <- dati$X
-    A_i = A[-1]
-    A_tilde <-c(0,cumsum(A))
-    A_tilde <- A_tilde[-length(A_tilde)]
-    A_tilde_i = cumsum(A_i)
-    W_i = W[-1]
-    w_i = W[-length(W)]
-    x_i = X[-length(X)]
-
-
-  }
-
-  else stop("no data supplied!")
-
-
-  # obtained by symbolic calculation in MATLAB
-  logLikelihood <-
-    log(gamma/2 + lambda_0 + (gamma*cos(2*pi*A_tilde_i))/2) +
-    log(exp(-W_i*theta)) +
-    (gamma*exp(-theta*(w_i + x_i))*(2*pi*sin(2*pi*A_tilde_i) + theta*cos(2*pi*A_tilde_i) - 2*pi*sin(2*pi*(A_i + A_tilde_i))*exp(A_i*theta) - theta*exp(A_i*theta)*cos(2*pi*(A_i + A_tilde_i))))/
-    (2*(4*pi^2 + theta^2)) - (lambda_0*exp(-theta*(w_i + x_i))*(exp(A_i*theta) - 1))/theta - (gamma*exp(-theta*(w_i + x_i))*(exp(A_i*theta) - 1))/(2*theta)
-
-  # mean instead of sum, the minus is for the negative log-likelihood
-  negLL <- - mean(logLikelihood)
-
-  return(negLL) # NEGATIVE LOG-LIKELIHOOD
-}
-
-
-gradNegLogLikelihoodFull <- function(params,RES){
   gamma <- params[1]
   lambda_0 <- params[2]
   theta <- params[3]
-  # params is a vector of (lambda_bar,alpha,theta)
-  W <- RES$Wj
-  Q.trans <- RES$Q.trans
-  IT.times <- RES$IT.times
-  Transitions <- c(0,cumsum(IT.times))
-  A <- RES$A
+
+  A <- dati$A
+  W <- dati$W
+  X <- dati$X
+  A_i = A[-1]
   A_tilde <-c(0,cumsum(A))
   A_tilde <- A_tilde[-length(A_tilde)]
-  X <- RES$Xj
-  Q <- RES$Qj
-  Pl <- RES$Pl
-  Y <- RES$Yj
-  # data from RES
-  A_i = A[-1];
-  A_tilde_i = cumsum(A_i);
+  A_tilde_i = cumsum(A_i)
   W_i = W[-1]
-  w_i = W[-length(W)];
+  w_i = W[-length(W)]
   x_i = X[-length(X)]
 
-  # obtained by symbolic calculation in MATLAB
-  # derivative wrt gamma
-  dg <- (cos(2*pi*A_tilde_i)/2 + 1/2)/(gamma/2 + lambda_0 + (gamma*cos(2*pi*A_tilde_i))/2) - (exp(-theta*(w_i + x_i))*(exp(A_i*theta) - 1))/(2*theta) + (exp(-theta*(w_i + x_i))*(2*pi*sin(2*pi*A_tilde_i) + theta*cos(2*pi*A_tilde_i) - 2*pi*sin(2*pi*(A_i + A_tilde_i))*exp(A_i*theta) - theta*exp(A_i*theta)*cos(2*pi*(A_i + A_tilde_i))))/(2*(4*pi^2 + theta^2))
-  # derivative wrt lambda_0
-  dl <- log(gamma/2 + lambda_0 + (gamma*cos(2*pi*A_tilde_i))/2) + log(exp(-W_i*theta)) + (gamma*exp(-theta*(w_i + x_i))*(2*pi*sin(2*pi*A_tilde_i) + theta*cos(2*pi*A_tilde_i) - 2*pi*sin(2*pi*(A_i + A_tilde_i))*exp(A_i*theta) - theta*exp(A_i*theta)*cos(2*pi*(A_i + A_tilde_i))))/(2*(4*pi^2 + theta^2)) - (lambda_0*exp(-theta*(w_i + x_i))*(exp(A_i*theta) - 1))/theta - (gamma*exp(-theta*(w_i + x_i))*(exp(A_i*theta) - 1))/(2*theta)
-  # derivative wrt theta
-  dt <- (lambda_0*exp(-theta*(w_i + x_i))*(exp(A_i*theta) - 1))/theta^2 - W_i - (gamma*exp(-theta*(w_i + x_i))*(exp(A_i*theta)*cos(2*pi*(A_i + A_tilde_i)) - cos(2*pi*A_tilde_i) + 2*A_i*pi*sin(2*pi*(A_i + A_tilde_i))*exp(A_i*theta) + A_i*theta*exp(A_i*theta)*cos(2*pi*(A_i + A_tilde_i))))/(2*(4*pi^2 + theta^2)) + (gamma*exp(-theta*(w_i + x_i))*(exp(A_i*theta) - 1))/(2*theta^2) + (gamma*exp(-theta*(w_i + x_i))*(w_i + x_i)*(exp(A_i*theta) - 1))/(2*theta) - (gamma*exp(-theta*(w_i + x_i))*(w_i + x_i)*(2*pi*sin(2*pi*A_tilde_i) + theta*cos(2*pi*A_tilde_i) - 2*pi*sin(2*pi*(A_i + A_tilde_i))*exp(A_i*theta) - theta*exp(A_i*theta)*cos(2*pi*(A_i + A_tilde_i))))/(2*(4*pi^2 + theta^2)) + (lambda_0*exp(-theta*(w_i + x_i))*(w_i + x_i)*(exp(A_i*theta) - 1))/theta - (gamma*theta*exp(-theta*(w_i + x_i))*(2*pi*sin(2*pi*A_tilde_i) + theta*cos(2*pi*A_tilde_i) - 2*pi*sin(2*pi*(A_i + A_tilde_i))*exp(A_i*theta) - theta*exp(A_i*theta)*cos(2*pi*(A_i + A_tilde_i))))/(4*pi^2 + theta^2)^2 - (A_i*gamma*exp(A_i*theta)*exp(-theta*(w_i + x_i)))/(2*theta) - (A_i*lambda_0*exp(A_i*theta)*exp(-theta*(w_i + x_i)))/theta
-  # the NEGATIVE gradient vector (hence the minus):
-  g <- -1 * c(sum(dg), sum(dl), sum(dt))
+  # elements of the log-likelihood
+  l_i <-
+    log(gamma/2+lambda_0+(gamma*cos(A_tilde_i*pi*2))/2)+
+    log(exp(-W_i*theta))+
+    (gamma*exp(-theta*(w_i+x_i))*(pi*sin(A_tilde_i*pi*2)*2+theta*cos(A_tilde_i*pi*2)-pi*sin(pi*(A_i+A_tilde_i)*2)*exp(A_i*theta)*2-theta*exp(A_i*theta)*cos(pi*(A_i+A_tilde_i)*2)))/(pi^2*8+theta^2*2)-(lambda_0*exp(-theta*(w_i+x_i))*(exp(A_i*theta)-1))/theta-(gamma*exp(-theta*(w_i+x_i))*(exp(A_i*theta)-1))/(theta*2)
 
-  return(g)
-
+  # return the negative mean
+  negMean <- -mean(l_i)
+  return(negMean)
 
 }
+
+
+
+
+
+
+
 
 gradNegLogLikelihoodMean <- function(params,RES){
+
   gamma <- params[1]
   lambda_0 <- params[2]
   theta <- params[3]
-  # params is a vector of (lambda_bar,alpha,theta)
-  W <- RES$Wj
-  Q.trans <- RES$Q.trans
-  IT.times <- RES$IT.times
-  Transitions <- c(0,cumsum(IT.times))
-  A <- RES$A
+
+  A <- dati$A
+  W <- dati$W
+  X <- dati$X
+  A_i = A[-1]
   A_tilde <-c(0,cumsum(A))
   A_tilde <- A_tilde[-length(A_tilde)]
-  X <- RES$Xj
-  Q <- RES$Qj
-  Pl <- RES$Pl
-  Y <- RES$Yj
-  # data from RES
-  A_i = A[-1];
-  A_tilde_i = cumsum(A_i);
+  A_tilde_i = cumsum(A_i)
   W_i = W[-1]
-  w_i = W[-length(W)];
+  w_i = W[-length(W)]
   x_i = X[-length(X)]
 
-  # obtained by symbolic calculation in MATLAB
-  # derivative wrt gamma
-  dg <- (cos(2*pi*A_tilde_i)/2 + 1/2)/(gamma/2 + lambda_0 + (gamma*cos(2*pi*A_tilde_i))/2) - (exp(-theta*(w_i + x_i))*(exp(A_i*theta) - 1))/(2*theta) + (exp(-theta*(w_i + x_i))*(2*pi*sin(2*pi*A_tilde_i) + theta*cos(2*pi*A_tilde_i) - 2*pi*sin(2*pi*(A_i + A_tilde_i))*exp(A_i*theta) - theta*exp(A_i*theta)*cos(2*pi*(A_i + A_tilde_i))))/(2*(4*pi^2 + theta^2))
-  # derivative wrt lambda_0
-  dl <- log(gamma/2 + lambda_0 + (gamma*cos(2*pi*A_tilde_i))/2) + log(exp(-W_i*theta)) + (gamma*exp(-theta*(w_i + x_i))*(2*pi*sin(2*pi*A_tilde_i) + theta*cos(2*pi*A_tilde_i) - 2*pi*sin(2*pi*(A_i + A_tilde_i))*exp(A_i*theta) - theta*exp(A_i*theta)*cos(2*pi*(A_i + A_tilde_i))))/(2*(4*pi^2 + theta^2)) - (lambda_0*exp(-theta*(w_i + x_i))*(exp(A_i*theta) - 1))/theta - (gamma*exp(-theta*(w_i + x_i))*(exp(A_i*theta) - 1))/(2*theta)
-  # derivative wrt theta
-  dt <- (lambda_0*exp(-theta*(w_i + x_i))*(exp(A_i*theta) - 1))/theta^2 - W_i - (gamma*exp(-theta*(w_i + x_i))*(exp(A_i*theta)*cos(2*pi*(A_i + A_tilde_i)) - cos(2*pi*A_tilde_i) + 2*A_i*pi*sin(2*pi*(A_i + A_tilde_i))*exp(A_i*theta) + A_i*theta*exp(A_i*theta)*cos(2*pi*(A_i + A_tilde_i))))/(2*(4*pi^2 + theta^2)) + (gamma*exp(-theta*(w_i + x_i))*(exp(A_i*theta) - 1))/(2*theta^2) + (gamma*exp(-theta*(w_i + x_i))*(w_i + x_i)*(exp(A_i*theta) - 1))/(2*theta) - (gamma*exp(-theta*(w_i + x_i))*(w_i + x_i)*(2*pi*sin(2*pi*A_tilde_i) + theta*cos(2*pi*A_tilde_i) - 2*pi*sin(2*pi*(A_i + A_tilde_i))*exp(A_i*theta) - theta*exp(A_i*theta)*cos(2*pi*(A_i + A_tilde_i))))/(2*(4*pi^2 + theta^2)) + (lambda_0*exp(-theta*(w_i + x_i))*(w_i + x_i)*(exp(A_i*theta) - 1))/theta - (gamma*theta*exp(-theta*(w_i + x_i))*(2*pi*sin(2*pi*A_tilde_i) + theta*cos(2*pi*A_tilde_i) - 2*pi*sin(2*pi*(A_i + A_tilde_i))*exp(A_i*theta) - theta*exp(A_i*theta)*cos(2*pi*(A_i + A_tilde_i))))/(4*pi^2 + theta^2)^2 - (A_i*gamma*exp(A_i*theta)*exp(-theta*(w_i + x_i)))/(2*theta) - (A_i*lambda_0*exp(A_i*theta)*exp(-theta*(w_i + x_i)))/theta
-  # the NEGATIVE gradient vector (hence the minus):
-  g <- -1 * c(mean(dg), mean(dl), mean(dt))
 
-  return(g)
+
+  # derivative by gamma:
+  dl_gamma <-
+    (cos(A_tilde_i*pi*2)/2+1/2) /
+    (gamma/2+lambda_0+(gamma*cos(A_tilde_i*pi*2))/2)-(exp(-theta*(w_i+x_i))*(exp(A_i*theta)-1))/(theta*2)+(exp(-theta*(w_i+x_i))*(pi*sin(A_tilde_i*pi*2)*2+theta*cos(A_tilde_i*pi*2)-pi*sin(pi*(A_i+A_tilde_i)*2)*exp(A_i*theta)*2-theta*exp(A_i*theta)*cos(pi*(A_i+A_tilde_i)*2)))/(pi^2*8+theta^2*2)
+
+  #derivative by lambda_0:
+  dl_lambda_0 <-
+    1/(gamma/2+lambda_0+(gamma*cos(A_tilde_i*pi*2))/2)-(exp(-theta*(w_i+x_i))*(exp(A_i*theta)-1))/theta
+
+  # derivative by theta:
+  dl_theta <-
+    -W_i + lambda_0*1/theta^2*exp(-theta*(w_i+x_i))*(exp(A_i*theta)-1)-(gamma*exp(-theta*(w_i+x_i))*(-cos(A_tilde_i*pi*2)+exp(A_i*theta)*cos(pi*(A_i+A_tilde_i)*2)+A_i*pi*sin(pi*(A_i+A_tilde_i)*2)*exp(A_i*theta)*2+A_i*theta*exp(A_i*theta)*cos(pi*(A_i+A_tilde_i)*2)))/(pi^2*8+theta^2*2)+(gamma*1/theta^2*exp(-theta*(w_i+x_i))*(exp(A_i*theta)-1))/2+(gamma*exp(-theta*(w_i+x_i))*(w_i+x_i)*(exp(A_i*theta)-1))/(theta*2)-(gamma*exp(-theta*(w_i+x_i))*(w_i+x_i)*(pi*sin(A_tilde_i*pi*2)*2+theta*cos(A_tilde_i*pi*2)-pi*sin(pi*(A_i+A_tilde_i)*2)*exp(A_i*theta)*2-theta*exp(A_i*theta)*cos(pi*(A_i+A_tilde_i)*2)))/(pi^2*8+theta^2*2)+(lambda_0*exp(-theta*(w_i+x_i))*(w_i+x_i)*(exp(A_i*theta)-1))/theta-gamma*theta*exp(-theta*(w_i+x_i))*1/(pi^2*4+theta^2)^2*(pi*sin(A_tilde_i*pi*2)*2+theta*cos(A_tilde_i*pi*2)-pi*sin(pi*(A_i+A_tilde_i)*2)*exp(A_i*theta)*2-theta*exp(A_i*theta)*cos(pi*(A_i+A_tilde_i)*2))-(A_i*gamma*exp(A_i*theta)*exp(-theta*(w_i+x_i)))/(theta*2)-(A_i*lambda_0*exp(A_i*theta)*exp(-theta*(w_i+x_i)))/theta
+  # return the negative of the gradient elements' mean
+  negativeGradientMean <-  - c(mean(dl_gamma), mean(dl_lambda_0), mean(dl_theta))
+
+
+ return(negativeGradientMean)
 
 
 }

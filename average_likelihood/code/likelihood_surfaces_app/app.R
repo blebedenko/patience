@@ -11,7 +11,7 @@ ui <- fluidPage(
 
   inputPanel(
     radioButtons("which_plot",
-                 "Which scenarios to plot? s = 10,20,30",
+                 "Which scenarios to plot? s = 5,10,20",
                  choiceNames = c("s=5","s=10","s=20"),
                  choiceValues = c(5L,10L,20L)),
     radioButtons("theta_value", label = "Choose a value for theta",
@@ -26,7 +26,8 @@ ui <- fluidPage(
     textOutput('s_title'),
     h4("The MLE's, given the current value of theta:"),
     tableOutput('mle'),
-    plotlyOutput('plotLikelihood',width = "100%")
+    plotlyOutput('plotLikelihood',width = "100%"),
+    h4("red dot shows the minimum")
   )
 )
 
@@ -54,7 +55,14 @@ server <- function(input, output) {
     dat <-currDat()
     p1 <- plot_ly(x=~gamma,y=~lambda_0,z=~negLogLik,type="mesh3d",data =dat,split = factor(dat$theta ),
                   contour = list(show = TRUE,color = "#001",width = 5), opacity = 0.5)
-    p1
+    mle <- dat[which.min(dat$negLogLik),1:4]
+
+    p1 %>%
+      add_trace(data = mle,
+                type = "scatter3d",mode="markers",
+                x=~gamma,y=~lambda_0,z=~negLogLik,
+                marker = list(color="red"))
+
   }
   )
   output$s_title <- renderText({
