@@ -1,4 +1,6 @@
 .Rproj.user
 .DS_Store
-Extras/*/*
+Extras/papers/*
+Extras/token/*
+Extras/average_likelihood/results/*
 !Extras/average_likelihood/code
