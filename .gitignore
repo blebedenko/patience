@@ -1,0 +1,4 @@
+.Rproj.user
+.DS_Store
+Extras/*/*
+!Extras/average_likelihood/code

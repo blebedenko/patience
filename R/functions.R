@@ -295,49 +295,6 @@ makeSimFilesAWX <- function(N_files, n_obs, gamma, lambda_0, theta, s, eta, mu){
 
 # Estimation --------------------------------------------------------------
 
-
-#' (negative) log-likelihood for the sinusoidal arrivals model
-#'
-#' @param params A vector with values (gamma,lambda_0, theta).
-#' @param RES simulation results
-#' @return The negative log-likelihood at the point provided.
-#' @export
-#'
-negLogLikelihoodFull <- function(params,RES){
-  gamma <- params[1]
-  lambda_0 <- params[2]
-  theta <- params[3]
-  # params is a vector of (lambda_bar,alpha,theta)
-  W <- RES$Wj
-  Q.trans <- RES$Q.trans
-  IT.times <- RES$IT.times
-  Transitions <- c(0,cumsum(IT.times))
-  A <- RES$A
-  A_tilde <-c(0,cumsum(A))
-  A_tilde <- A_tilde[-length(A_tilde)]
-  X <- RES$Xj
-  Q <- RES$Qj
-  Pl <- RES$Pl
-  Y <- RES$Yj
-  # data from RES
-  A_i = A[-1];
-  A_tilde_i = cumsum(A_i);
-  W_i = W[-1]
-  w_i = W[-length(W)];
-  x_i = X[-length(X)]
-
-  # obtained by symbolic calculation in MATLAB
-  logLikelihood <-
-  log(gamma/2 + lambda_0 + (gamma*cos(2*pi*A_tilde_i))/2) +
-    log(exp(-W_i*theta)) +
-    (gamma*exp(-theta*(w_i + x_i))*(2*pi*sin(2*pi*A_tilde_i) + theta*cos(2*pi*A_tilde_i) - 2*pi*sin(2*pi*(A_i + A_tilde_i))*exp(A_i*theta) - theta*exp(A_i*theta)*cos(2*pi*(A_i + A_tilde_i))))/
-    (2*(4*pi^2 + theta^2)) - (lambda_0*exp(-theta*(w_i + x_i))*(exp(A_i*theta) - 1))/theta - (gamma*exp(-theta*(w_i + x_i))*(exp(A_i*theta) - 1))/(2*theta)
-
-  negLL <- - sum(logLikelihood)
-
-  return(negLL) # NEGATIVE LOG-LIKELIHOOD
-}
-
 #' (negative) mean log-likelihood for the sinusoidal arrivals model
 #' The mean is returned instead of the sum - should help gradient based optimizers
 #' @param params A vector with values (gamma,lambda_0, theta).
@@ -382,7 +339,7 @@ negLogLikelihoodMean<- function(params,dati){
 
 
 
-gradNegLogLikelihoodMean <- function(params,RES){
+gradNegLogLikelihoodMean <- function(params,dati){
 
   gamma <- params[1]
   lambda_0 <- params[2]
@@ -432,27 +389,18 @@ gradNegLogLikelihoodMean <- function(params,RES){
 #' @export
 #'
 #' @examples
-mleBoris <- function(RES, PARAMS ,type){
-  if (type == "s"){
+mleBoris <- function(dati, PARAMS){
+
     opt <-
     optim(PARAMS, # note that PARAMS is temporary
-          fn = negLogLikelihoodFull,
-          lower = PARAMS/2,
-          upper = PARAMS*2,
-          method = "L-BFGS-B",
-          gr = gradNegLogLikelihoodFull,
-          RES = RES)
-  }
-  if (type == "m"){
-    opt <-
-      optim(PARAMS, # note that PARAMS is temporary
           fn = negLogLikelihoodMean,
-          lower = PARAMS/2,
-         upper = PARAMS*2,
-         method = "L-BFGS-B",
+          lower = PARAMS/10,
+          upper = PARAMS*10,
+          method = "L-BFGS-B",
           gr = gradNegLogLikelihoodMean,
-          RES = RES)
-  }
+          dati = dati)
+
+
   ans <- opt$par
   names(ans) <- c("gamma","lambda_0","theta")
   return(ans)
@@ -470,10 +418,11 @@ lambda.MLE <- function(theta.hat,A,W,X){
   return(lambda.hat)
 }
 
-mleLironThetaLambda<- function(RES,acc=1e-4){
-  A <- RES$Aj
-  W <- RES$Wj
-  X <- RES$Xj
+mleLironThetaLambda<- function(dati,acc=1e-4){
+
+  A <- dati$A
+  W <- dati$W
+  X <- dati$X
   n <- length(W)
   Theta <- c(0,10^3) #Search range
   d <- acc*2
@@ -488,7 +437,7 @@ mleLironThetaLambda<- function(RES,acc=1e-4){
     if(d > acc){Theta[2] <- theta.hat}
     if(d < -acc){Theta[1] <- theta.hat}
   }
-  return(data.frame(theta.hat=theta.hat,lambda.hat=lambda.hat))
+  return(c("theta.hat"=theta.hat,"lambda.hat"=lambda.hat))
 }
 
 
@@ -538,24 +487,10 @@ atomicSim <- function(n,lambda_0, gamma,theta, eta =1, mu = 1, s ){
 #'
 #' @examples
 ithLL <- function(dati,gamma,lambda_0,theta){
-  A <- dati$A
-  W <- dati$W
-  X <- dati$X
-  A_i = A[-1]
-  A_tilde <-c(0,cumsum(A))
-  A_tilde <- A_tilde[-length(A_tilde)]
-  A_tilde_i = cumsum(A_i)
-  W_i = W[-1]
-  w_i = W[-length(W)]
-  x_i = X[-length(X)]
 
-  logLikelihood <-
-    log(gamma/2 + lambda_0 + (gamma*cos(2*pi*A_tilde_i))/2) +
-    log(exp(-W_i*theta)) +
-    (gamma*exp(-theta*(w_i + x_i))*(2*pi*sin(2*pi*A_tilde_i) + theta*cos(2*pi*A_tilde_i) - 2*pi*sin(2*pi*(A_i + A_tilde_i))*exp(A_i*theta) - theta*exp(A_i*theta)*cos(2*pi*(A_i + A_tilde_i))))/
-    (2*(4*pi^2 + theta^2)) - (lambda_0*exp(-theta*(w_i + x_i))*(exp(A_i*theta) - 1))/theta - (gamma*exp(-theta*(w_i + x_i))*(exp(A_i*theta) - 1))/(2*theta)
-
-  return(-mean(logLikelihood))
+  params <- c(gamma,lambda_0,theta)
+  negMean <- negLogLikelihoodMean(params = params, dati = dati)
+  return(negMean)
 }
 
 
