@@ -16,8 +16,8 @@ N_files <- 10 # number of files per iteration
 eta <- 1
 mu <- 1
 # EB (Job size epxectation)eta/mu
-n <- 10000
-gamma <- 40 # bigger periodic input
+n <- 100000
+gamma <- 10 # bigger periodic input
 lambda_0 <- 10
 theta <- 2.5
 PARAMS <-c(gamma=gamma,lambda_0=lambda_0,theta=theta)
@@ -25,7 +25,7 @@ PARAMS <-c(gamma=gamma,lambda_0=lambda_0,theta=theta)
 
 # s = 5 -------------------------------------------------------------------
 
-s <- 5
+s <- 3
 path <-  paste0("./realizations for s=",s)
 dir.create(path=path)
 setwd(path)

@@ -259,6 +259,7 @@ filenamer(n_obs = 1000,
 
 #' Function to make many files with simulation results
 #'
+#' @param path Absolute path of the folder to create the files in (will be set to wd)
 #' @param N_files Desired number of files to be created in the working directory
 #' @param n_obs Number of effective arrivals per file. Defaults to 10,000. Do not use less than 5000.
 #' @param gamma The periodic arrival rate maximum amplitude
@@ -274,9 +275,28 @@ filenamer(n_obs = 1000,
 #' @export
 #'
 #' @examples
-makeSimFilesAWX <- function(N_files, n_obs, gamma, lambda_0, theta, s, eta, mu){
-  for (i in 1:N_files){
-    RES <- resSimCosine(n=n_obs,gamma = gamma,lambda_0 = lambda_0,theta = theta,s = s,eta = eta,mu = mu)
+makeSimFilesAWX <- function(path,
+                            n.cores = parallel::detectCores() - 2,
+                            N_files,
+                            n_obs,
+                            gamma,
+                            lambda_0,
+                            theta,
+                            s,
+                            eta,
+                            mu){
+  cl <- makeCluster(n.cores) # make a parallel cluster
+  doParallel::registerDoParallel(cl=cl)
+  foreach::foreach(i= 1:N_files,
+                   .combine = c,
+                   .packages = "patience") %dopar% {
+    RES <- resSimCosine(n=n_obs,
+                        gamma = gamma,
+                        lambda_0 = lambda_0,
+                        theta = theta,
+                        s = s,
+                        eta = eta,
+                        mu = mu)
     A <- RES$A
     W <- RES$Wj
     X <- RES$Xj
@@ -289,8 +309,8 @@ makeSimFilesAWX <- function(N_files, n_obs, gamma, lambda_0, theta, s, eta, mu){
                       eta = eta,
                       mu = mu)
     write.csv(dat,file = name,row.names = FALSE)
-
-  }
+                   }
+  stopCluster(cl)
 }
 
 # Estimation --------------------------------------------------------------

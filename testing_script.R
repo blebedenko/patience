@@ -6,7 +6,7 @@ library(parallel)
 library(filenamer)
 library(patience)
 library(pbapply)
-
+library(doParallel)
 
 
 # Simulation --------------------------------------------------------------
@@ -141,7 +141,16 @@ SD <- apply(currMLE, 2, sd)
 RMSE <- sqrt(colMeans((currMLE - pars)^2))
 MAE <- colMeans(abs((currMLE - pars))/pars)
 
-data.frame(bias,SD,RMSE,MAE) %>%
-  pander::pander()
-
-prop_mode <-
+nservers <- 3
+tic()
+makeSimFilesAWX(path = getwd(),
+                n.cores = 7,
+                N_files = 500,
+                n_obs = 1e5,
+                gamma = 10,
+                lambda_0 = 10,
+                theta = 2.5,
+                s = nservers,
+                eta = 1,
+                mu = 1)
+toc()
