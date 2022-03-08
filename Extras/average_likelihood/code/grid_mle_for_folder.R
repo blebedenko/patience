@@ -77,6 +77,12 @@ foreach (i = 1:length(PATHS),.packages = c("patience","dplyr"),
 toc()
 stopCluster(cl)
 
+averageLogLik <-
+  sapply(ANS_lik, function(d1) d1 %>% pull (negLogLik)) %>%
+  rowMeans()
+
+average_for_folder <- data.frame(grid, averageLogLik)
+write.csv(average_for_folder,"average_likelihood_grid.csv")
 
 
 ### MLE's ----
@@ -101,20 +107,6 @@ ANS_mle <-
 toc()
 stopCluster(cl)
 
-
-# Write the results in the corresponding folder ---------------------------
-
-
-
-## average likelihood
-averageLogLik <-
-sapply(ANS_lik, function(d1) d1 %>% pull (negLogLik)) %>%
-  rowMeans()
-
-average_for_folder <- data.frame(grid, averageLogLik)
-write.csv(average_for_folder,"average_likelihood_grid.csv")
-
-## mles
 
 mle_folder <- ANS_mle %>% as.data.frame()
 write.csv(mle_folder,"MLE.csv",row.names = FALSE)
