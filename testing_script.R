@@ -141,11 +141,12 @@ SD <- apply(currMLE, 2, sd)
 RMSE <- sqrt(colMeans((currMLE - pars)^2))
 MAE <- colMeans(abs((currMLE - pars))/pars)
 
-nservers <- 3
+setwd("~/patience/Extras/average_likelihood/results/gamma = 10 lambda_0 = 10 theta = 2.5/realizations for s=5")
+nservers <- 5
 tic()
 makeSimFilesAWX(path = getwd(),
                 n.cores = 7,
-                N_files = 500,
+                N_files = 1000,
                 n_obs = 1e5,
                 gamma = 10,
                 lambda_0 = 10,

@@ -248,7 +248,7 @@ filenamer <- function(n_obs, gamma, lambda_0, theta, s, eta, mu){
                  as.numeric(Sys.time()),
                  ".csv") # name with timestamp and extension
   return(name)
-  }
+}
 filenamer(n_obs = 1000,
           gamma = 19,
           lambda_0 = 10,
@@ -290,25 +290,25 @@ makeSimFilesAWX <- function(path,
   foreach::foreach(i= 1:N_files,
                    .combine = c,
                    .packages = "patience") %dopar% {
-    RES <- resSimCosine(n=n_obs,
-                        gamma = gamma,
-                        lambda_0 = lambda_0,
-                        theta = theta,
-                        s = s,
-                        eta = eta,
-                        mu = mu)
-    A <- RES$A
-    W <- RES$Wj
-    X <- RES$Xj
-    dat <- data.frame(A=A,W=W,X=X)
-    name <- filenamer(n_obs = n_obs,
-                      gamma = gamma,
-                      lambda_0 = lambda_0,
-                      theta = theta,
-                      s = s,
-                      eta = eta,
-                      mu = mu)
-    write.csv(dat,file = name,row.names = FALSE)
+                     RES <- resSimCosine(n=n_obs,
+                                         gamma = gamma,
+                                         lambda_0 = lambda_0,
+                                         theta = theta,
+                                         s = s,
+                                         eta = eta,
+                                         mu = mu)
+                     A <- RES$A
+                     W <- RES$Wj
+                     X <- RES$Xj
+                     dat <- data.frame(A=A,W=W,X=X)
+                     name <- filenamer(n_obs = n_obs,
+                                       gamma = gamma,
+                                       lambda_0 = lambda_0,
+                                       theta = theta,
+                                       s = s,
+                                       eta = eta,
+                                       mu = mu)
+                     write.csv(dat,file = name,row.names = FALSE)
                    }
   stopCluster(cl)
 }
@@ -394,7 +394,7 @@ gradNegLogLikelihoodMean <- function(params,dati){
   negativeGradientMean <-  - c(mean(dl_gamma), mean(dl_lambda_0), mean(dl_theta))
 
 
- return(negativeGradientMean)
+  return(negativeGradientMean)
 
 
 }
@@ -411,7 +411,7 @@ gradNegLogLikelihoodMean <- function(params,dati){
 #' @examples
 mleBoris <- function(dati, PARAMS){
 
-    opt <-
+  opt <-
     optim(PARAMS, # note that PARAMS is temporary
           fn = negLogLikelihoodMean,
           lower = PARAMS/10,
@@ -482,7 +482,7 @@ mleLironThetaLambda<- function(dati,acc=1e-4){
 atomicSim <- function(n,lambda_0, gamma,theta, eta =1, mu = 1, s ){
   # temporary: use true parameters as starting values
   PARAMS <- c(gamma = gamma,lambda_0=lambda_0,theta = theta)
-    # generate the sample
+  # generate the sample
   RES <- resSimCosine(n=n,gamma = gamma,lambda_0 = lambda_0,theta = theta,s = s,eta = eta,mu = mu)
   boris <- mleBoris(RES,PARAMS)
   liron <- mleLironThetaLambda(RES)
@@ -557,16 +557,23 @@ makeParGrid <- function(params,spans,grid.sizes){
   if (length(params) != 3)
     stop("Invalid number of parameters, must be three - gamma, lambda_0, theta.")
   # the central parameter values
-  grid.values <- mapply(seq,
-                        from = params * (1 - spans),
-                        to = params * (1 + spans),
-                        length.out = grid.sizes) %>%
-    as.data.frame()
+  names(params) <- c("gamma", "lambda_0", "theta")
+
+  gamma.seq <- seq(from = params["gamma"]* (1 - spans[1]),
+                   to = params["gamma"]* (1 + spans[1]),
+                   length.out = grid.sizes[1])
+
+  lambda_0.seq <- seq(from = params[ "lambda_0"]* (1 - spans[2]),
+                      to = params[ "lambda_0"]* (1 + spans[2]),
+                      length.out = grid.sizes[2])
 
 
-  names(grid.values) <- c("gamma", "lambda_0", "theta")
+  theta.seq <- seq(from = params[ "theta"]* (1 - spans[3]),
+                   to = params[ "theta"]* (1 + spans[3]),
+                   length.out = grid.sizes[3])
 
-  grid <- expand.grid(grid.values$gamma,grid.values$lambda_0,grid.values$theta)
+
+  grid <- expand.grid(gamma.seq,lambda_0.seq,theta.seq)
   names(grid) <- c("gamma", "lambda_0", "theta")
   return(grid)
 }
@@ -585,4 +592,119 @@ readAWXFiles <- function(path = getwd()){
   return(L)
 }
 
+
+
+#' Evaluate the log likelihood function over a grid of parameter values
+#'
+#' @param dati a dataset A,W,X
+#' @param grid a grid of parameters
+#'
+#' @return
+#' @export
+#'
+#' @examples
+
+evaluateGridFromRealization <- function(dati, grid){
+  # prepare the data:
+  A <- dati$A
+  W <- dati$W
+  X <- dati$X
+  A_i = A[-1]
+  A_tilde <-c(0,cumsum(A))
+  A_tilde <- A_tilde[-length(A_tilde)]
+  A_tilde_i = cumsum(A_i)
+  W_i = W[-1]
+  w_i = W[-length(W)]
+  x_i = X[-length(X)]
+  # the columns of this dataframe will contain the repeating values in the loglikelihood
+  tdf <- data.frame(A_i,A_tilde_i,W_i,w_i,x_i)
+  # columns that are independent of the parameters
+  tdf <- tdf %>%
+    mutate(
+      s3 = 2 * pi * (A_i + A_tilde_i),
+      s4 = cos(2 * pi * A_tilde_i),
+      s5 = sin(2 * pi * A_tilde_i)
+
+    )
+  # create a local function that computes the likelihood for one parameter value
+
+  getNegMeanLogLik <- function(gamma, lambda_0, theta){
+
+    tdf %>%
+      # create the shortcut notation columns:
+      mutate(s1 = exp(-theta * (w_i + x_i)),
+             s2 = exp(theta * A_i) - 1,
+             s3 = 2 * pi * (A_i + A_tilde_i),
+             s4 = cos(2 * pi * A_tilde_i),
+             s5 = sin(2 * pi * A_tilde_i),
+             s6 = s2 + 1) %>%
+      # compute each row of the expression for l_i in the PDF
+      mutate(row1 = log(gamma/2 + lambda_0 + (gamma/2) * s4),
+             row2 = W_i * theta,
+             row3 = gamma * s1 *
+               (2 * pi * s5 + theta * s4 - 2 * pi * sin(s3) * s6 - theta * s6 * cos(s3)) /
+               (2 * (theta ^ 2 + 4 * pi ^ 2)),
+             row4 = lambda_0 * s1 * s2 / theta,
+             row5 = gamma * s1 * s2 / (2 * theta)) %>%
+      summarize( - mean( row1 - row2 + row3 - row4 - row5)) %>%
+      pull()
+  }
+
+  # apply the function to the parameter grid
+  ans <- mapply(getNegMeanLogLik,
+                gamma = grid$gamma,
+                lambda_0 = grid$lambda_0,
+                theta = grid$theta)
+
+  return(ans)
+
+
+}
+
+
+
+#' Evaluate a parameter grid's likelihood from AWX file
+#'
+#' @param path a AWX.csv file path
+#' @param grid output of makeParGrid()
+#'
+#' @return
+#' @export
+#'
+#' @examples
+gridFromFilePath <- function(path, grid){
+  dati <- read.csv(path)
+  a <- Sys.time()
+  negLogLik <- evaluateGridFromRealization(dati = dati,grid = grid)
+  b <- Sys.time()
+  timediff <- as.numeric(b-a)
+  units <- attributes(b-a)$units
+  cat("Start @:",a,"Stop @:",b,"time diff. of", timediff, units,"\n")
+  res <- grid
+  res$negLogLik <- negLogLik
+  return(res)
+
+}
+
+
+
+
+#' Evaluate MLE's (Boris and Liron) from AWX file
+#'
+#' @param path a AWX.csv file path
+#' @param grid output of makeParGrid()
+#'
+#' @return Length 5 vector - 3 Boris + 2 Liron
+#' @export
+#'
+#' @examples
+mleFromFilePath <- function(path){
+  dati <- read.csv(path)
+
+  boris <- mleBoris(dati = dati,PARAMS = PARAMS)
+  liron <- mleLironThetaLambda(dati = dati)
+  mles <- c(boris,liron)
+  mles
+
+}
 
