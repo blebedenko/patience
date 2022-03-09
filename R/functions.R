@@ -315,10 +315,12 @@ makeSimFilesAWX <- function(path,
 
 # Estimation --------------------------------------------------------------
 
+## Full estimation (gamma, lambda_0, theta) ---------
+
+
 #' (negative) mean log-likelihood for the sinusoidal arrivals model
 #' The mean is returned instead of the sum - should help gradient based optimizers
 #' @param params A vector with values (gamma,lambda_0, theta).
-#' @param RES simulation results(should be NULL if dati supplied)
 #' @param dati compact simulation results for memory economy (A,W,X).
 #' @return The negative log-likelihood at the point provided.
 #' @export
@@ -426,7 +428,50 @@ mleBoris <- function(dati, PARAMS){
   return(ans)
 }
 
-# Liron's estimator -------------------------------------------------------
+## Known Arrival rate ------
+
+
+#' (negative) mean log-likelihood for known sinusoidal arrivals
+#' The mean is returned instead of the sum - should help gradient based optimizers
+#' @param theta a vector of theta values
+#' @param params A vector with values (gamma,lambda_0)
+#' @param dati compact simulation results for memory economy (A,W,X).
+#' @return The negative log-likelihood at the point provided.
+#' @export
+#'
+negLogLikelihoodMean.KnownArrival<- function(theta.vec,params,dati){
+
+  gamma <- params[1]
+  lambda_0 <- params[2]
+
+  A <- dati$A
+  W <- dati$W
+  X <- dati$X
+  A_i = A[-1]
+  A_tilde <-c(0,cumsum(A))
+  A_tilde <- A_tilde[-length(A_tilde)]
+  A_tilde_i = cumsum(A_i)
+  W_i = W[-1]
+  w_i = W[-length(W)]
+  x_i = X[-length(X)]
+
+  negMean <- numeric(length(theta.vec))
+  for (k in 1:length(theta.vec)){
+    theta <- theta.vec[k]
+    l_i <-
+      log(exp(-W_i*theta))+
+      (gamma*exp(-theta*(w_i+x_i))*(pi*sin(A_tilde_i*pi*2)*2+theta*cos(A_tilde_i*pi*2)-pi*sin(pi*(A_i+A_tilde_i)*2)*exp(A_i*theta)*2-theta*exp(A_i*theta)*cos(pi*(A_i+A_tilde_i)*2)))/(pi^2*8+theta^2*2)-(lambda_0*exp(-theta*(w_i+x_i))*(exp(A_i*theta)-1))/theta-(gamma*exp(-theta*(w_i+x_i))*(exp(A_i*theta)-1))/(theta*2)
+    negMean[k] <- -mean(l_i)
+
+  }
+  # elements of the log-likelihood
+
+  # return the negative mean
+    return(negMean)
+
+}
+
+## Liron's estimator -------------------------------------------------------
 
 
 #Lambda MLE given an estimator for theta (exponential patience)
