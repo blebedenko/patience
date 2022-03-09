@@ -4,10 +4,10 @@
 \alias{evaluateGridFromRealization}
 \title{Evaluate the log likelihood function over a grid of parameter values}
 \usage{
-evaluateGridFromRealization(dati, grid)
+evaluateGridFromRealization(AWX, grid)
 }
 \arguments{
-\item{dati}{a dataset A,W,X}
+\item{AWX}{a dataset A,W,X}
 
 \item{grid}{a grid of parameters}
 }

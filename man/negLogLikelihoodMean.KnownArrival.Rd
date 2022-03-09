@@ -5,14 +5,14 @@
 \title{(negative) mean log-likelihood for known sinusoidal arrivals
 The mean is returned instead of the sum - should help gradient based optimizers}
 \usage{
-negLogLikelihoodMean.KnownArrival(theta, params, dati)
+negLogLikelihoodMean.KnownArrival(theta.vec, params, AWX)
 }
 \arguments{
-\item{theta}{a vector of theta values}
-
 \item{params}{A vector with values (gamma,lambda_0)}
 
-\item{dati}{compact simulation results for memory economy (A,W,X).}
+\item{AWX}{compact simulation results for memory economy (A,W,X).}
+
+\item{theta}{a vector of theta values}
 }
 \value{
 The negative log-likelihood at the point provided.

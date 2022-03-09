@@ -5,12 +5,12 @@
 \title{(negative) mean log-likelihood for the sinusoidal arrivals model
 The mean is returned instead of the sum - should help gradient based optimizers}
 \usage{
-negLogLikelihoodMean(params, dati)
+negLogLikelihoodMean(params, AWX)
 }
 \arguments{
 \item{params}{A vector with values (gamma,lambda_0, theta).}
 
-\item{dati}{compact simulation results for memory economy (A,W,X).}
+\item{AWX}{compact simulation results for memory economy (A,W,X).}
 }
 \value{
 The negative log-likelihood at the point provided.

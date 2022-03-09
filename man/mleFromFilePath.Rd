@@ -2,7 +2,7 @@
 % Please edit documentation in R/functions.R
 \name{mleFromFilePath}
 \alias{mleFromFilePath}
-\title{Evaluate MLE's (Boris and Liron) from AWX file}
+\title{Evaluate MLE's  from AWX data}
 \usage{
 mleFromFilePath(path)
 }
@@ -15,5 +15,5 @@ mleFromFilePath(path)
 Length 5 vector - 3 Boris + 2 Liron
 }
 \description{
-Evaluate MLE's (Boris and Liron) from AWX file
+Evaluate MLE's  from AWX data
 }
