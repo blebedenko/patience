@@ -649,7 +649,7 @@ negLogLikelihoodMean.KnownArrival<- function(theta.vec,params,dati){
   # elements of the log-likelihood
 
   # return the negative mean
-    return(negMean)
+  return(negMean)
 
 }
 
