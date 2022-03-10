@@ -4,10 +4,12 @@
 \alias{mleBoris}
 \title{MLE for the cosine arrival + exponential patience model}
 \usage{
-mleBoris(dati, PARAMS)
+mleBoris(AWX, PARAMS)
 }
 \arguments{
 \item{PARAMS}{(temporary) True values of parameters to use a starting points}
+
+\item{RES}{List with simulation results}
 
 \item{type}{type of log-likelihood to be optimized - sum ("s") or mean ("m")}
 }

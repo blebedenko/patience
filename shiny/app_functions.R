@@ -233,15 +233,7 @@ resSimCosine <- function(n, gamma, lambda_0, theta, s, eta, mu){
   return(RES)
 }
 
-#' Utility: turn RES to AWX
-#'
-#' @param RES
-#'
-#' @return
-#' @export
-#'
-#' @examples
-RES2AWX <- function(RES) {return(data.frame(A=RES$Aj,W=RES$Wj,X=RES$Xj))}
+
 
 filenamer <- function(n_obs, gamma, lambda_0, theta, s, eta, mu){
   name <- (paste0("AWX_",
@@ -326,16 +318,6 @@ makeSimFilesAWX <- function(path,
 
 
 
-#' Plot First Arrivals and Queue Length Changes
-#'
-#' @param RES List with simulation results
-#' @param n_customers no. of first customers to plot
-#' @param pch what character to use for arrivals
-#'
-#' @return
-#' @export
-#'
-#' @examples
 pltQueueLengthArrivals <- function(RES, n_customers = 500, pch = 4){
   A <- RES$Aj # start from 0
   W <- RES$Wj
@@ -359,8 +341,7 @@ pltQueueLengthArrivals <- function(RES, n_customers = 500, pch = 4){
        xlab = "time",
        ylab = "No. customers",
        col = "darkgreen",
-       main = ""
-       )
+       main = "Queue length and arrivals")
   stripchart(A_tilde,at=.01, add=T,pch = pch)
   last_transition <- which.max(Transitions[Transitions <= max(A_tilde)] )
   # normalized the queue length by the maximum
@@ -380,15 +361,6 @@ pltQueueLengthArrivals <- function(RES, n_customers = 500, pch = 4){
 }
 
 
-#' Plot the patience distribution
-#'
-#' @param RES List with simulation results
-#' @param n_quantiles
-#'
-#' @return
-#' @export
-#'
-#' @examples
 pltQueueByHour <- function(RES, n_quantiles = 4){
   A <- RES$Aj
   W <- RES$Wj
@@ -433,7 +405,7 @@ pltQueueByHour <- function(RES, n_quantiles = 4){
     ylab("No. of customers") +
     xlab("Hour") +
     theme(axis.text = element_text(size=20),axis.title = element_text(size=20)) +
-    #ggtitle("Queue length by hour") +
+    ggtitle("Queue length by hour") +
     theme_bw()
 
 
@@ -441,15 +413,6 @@ pltQueueByHour <- function(RES, n_quantiles = 4){
 
 
 
-#' Analyze the customers by patience during an arrival cycle
-#'
-#' @param RES List with simulation results
-#' @param n_quantiles
-#'
-#' @return
-#' @export
-#'
-#' @examples
 pltQueueByHourPerc <- function(RES, n_quantiles = 4){
   A <- RES$Aj
   W <- RES$Wj
@@ -499,10 +462,33 @@ pltQueueByHourPerc <- function(RES, n_quantiles = 4){
     xlab("Hour") +
     theme(axis.text = element_text(size=20),axis.title = element_text(size=20)) +
     scale_y_continuous(labels = scales::percent_format()) +
-    #ggtitle("No. of customers by hour", "partioned inot quantile groups") +
+    ggtitle("No. of customers by hour", "partioned inot quantile groups") +
     theme_bw()
 
 
+
+}
+
+
+plotLogLikelihoodAlpha <- function(RES,theta,lambda_bar){
+  RES <<- RES # create in this env.
+  theta <<- theta
+  lambda_bar <<-lambda_bar
+  W <- RES$Wj
+  Q.trans <- RES$Q.trans
+  IT.times <- RES$IT.times
+  Transitions <- c(0,cumsum(IT.times))
+  A <- RES$A
+  A_tilde <-c(0,cumsum(A))
+  A_tilde <- A_tilde[-length(A_tilde)]
+  X <- RES$Xj
+  Q <- RES$Qj
+  Pl <- RES$Pl
+  Y <- RES$Yj
+  f <- Vectorize(logLikelihoodAlpha,vectorize.args = "alpha")
+  plot(f,from = 0, to = 1,ylab = "log-likelihood",
+       xlab = expression(alpha),
+       main = paste(c("mle of alpha :", round(findAlphaMLE(RES,theta=theta,lambda_bar = lambda_bar),3))))
 
 }
 
@@ -517,19 +503,19 @@ pltQueueByHourPerc <- function(RES, n_quantiles = 4){
 #' (negative) mean log-likelihood for the sinusoidal arrivals model
 #' The mean is returned instead of the sum - should help gradient based optimizers
 #' @param params A vector with values (gamma,lambda_0, theta).
-#' @param AWX compact simulation results for memory economy (A,W,X).
+#' @param dati compact simulation results for memory economy (A,W,X).
 #' @return The negative log-likelihood at the point provided.
 #' @export
 #'
-negLogLikelihoodMean<- function(params,AWX){
+negLogLikelihoodMean<- function(params,dati){
 
   gamma <- params[1]
   lambda_0 <- params[2]
   theta <- params[3]
 
-  A <- AWX$A
-  W <- AWX$W
-  X <- AWX$X
+  A <- dati$A
+  W <- dati$W
+  X <- dati$X
   A_i = A[-1]
   A_tilde <-c(0,cumsum(A))
   A_tilde <- A_tilde[-length(A_tilde)]
@@ -557,15 +543,15 @@ negLogLikelihoodMean<- function(params,AWX){
 
 
 
-gradNegLogLikelihoodMean <- function(params,AWX){
+gradNegLogLikelihoodMean <- function(params,dati){
 
   gamma <- params[1]
   lambda_0 <- params[2]
   theta <- params[3]
 
-  A <- AWX$A
-  W <- AWX$W
-  X <- AWX$X
+  A <- dati$A
+  W <- dati$W
+  X <- dati$X
   A_i = A[-1]
   A_tilde <-c(0,cumsum(A))
   A_tilde <- A_tilde[-length(A_tilde)]
@@ -600,14 +586,14 @@ gradNegLogLikelihoodMean <- function(params,AWX){
 
 #' MLE for the cosine arrival + exponential patience model
 #'
-#' @param RES List with simulation results
+#' @param RES
 #' @param PARAMS (temporary) True values of parameters to use a starting points
 #' @param type type of log-likelihood to be optimized - sum ("s") or mean ("m")
 #' @return gradient vector of the negative log-likelihood
 #' @export
 #'
 #' @examples
-mleBoris <- function(AWX, PARAMS){
+mleBoris <- function(dati, PARAMS){
 
   opt <-
     optim(PARAMS, # note that PARAMS is temporary
@@ -616,7 +602,7 @@ mleBoris <- function(AWX, PARAMS){
           upper = PARAMS*10,
           method = "L-BFGS-B",
           gr = gradNegLogLikelihoodMean,
-          AWX = AWX)
+          dati = dati)
 
 
   ans <- opt$par
@@ -631,18 +617,18 @@ mleBoris <- function(AWX, PARAMS){
 #' The mean is returned instead of the sum - should help gradient based optimizers
 #' @param theta a vector of theta values
 #' @param params A vector with values (gamma,lambda_0)
-#' @param AWX compact simulation results for memory economy (A,W,X).
+#' @param dati compact simulation results for memory economy (A,W,X).
 #' @return The negative log-likelihood at the point provided.
 #' @export
 #'
-negLogLikelihoodMean.KnownArrival<- function(theta.vec,params,AWX){
+negLogLikelihoodMean.KnownArrival<- function(theta.vec,params,dati){
 
   gamma <- params[1]
   lambda_0 <- params[2]
 
-  A <- AWX$A
-  W <- AWX$W
-  X <- AWX$X
+  A <- dati$A
+  W <- dati$W
+  X <- dati$X
   A_i = A[-1]
   A_tilde <-c(0,cumsum(A))
   A_tilde <- A_tilde[-length(A_tilde)]
@@ -663,52 +649,27 @@ negLogLikelihoodMean.KnownArrival<- function(theta.vec,params,AWX){
   # elements of the log-likelihood
 
   # return the negative mean
-    return(negMean)
+  return(negMean)
 
 }
-
-
-#' MLE for theta provided gamma and lambda_0
-#'
-#' @param AWX data
-#' @param params c(gamma,lambda_0)
-#'
-#' @return MLE
-#' @export
-#'
-#' @examples
-mleKnownArrival <- function(AWX,params){
-  mle <- optimize(negLogLikelihoodMean.KnownArrival,interval = c(0.1,100),params = params,AWX=AWX)$minimum
-  return(mle)
-  }
-
 
 ## Liron's estimator -------------------------------------------------------
 
 
+#Lambda MLE given an estimator for theta (exponential patience)
+lambda.MLE <- function(theta.hat,A,W,X){
+  n <- length(W)
+  a <- exp(-theta.hat*W[2:n])-exp(-theta.hat*(W[1:(n-1)]+X[1:(n-1)]))
+  b <- theta.hat*pmax(rep(0,n-1),A[2:n]-W[1:(n-1)]-X[1:(n-1)])
+  lambda.hat <- n*theta.hat/sum(a+b)
+  return(lambda.hat)
+}
 
+mleLironThetaLambda<- function(dati,acc=1e-4){
 
-#' Liron MLE
-#'
-#' @param AWX
-#' @param acc
-#'
-#' @return A vector of theta and lambda estimates
-#' @export
-
-mleLironThetaLambda<- function(AWX,acc=1e-4){
-
-  #Lambda MLE given an estimator for theta (exponential patience)
-  lambda.MLE <- function(theta.hat,A,W,X){
-    n <- length(W)
-    a <- exp(-theta.hat*W[2:n])-exp(-theta.hat*(W[1:(n-1)]+X[1:(n-1)]))
-    b <- theta.hat*pmax(rep(0,n-1),A[2:n]-W[1:(n-1)]-X[1:(n-1)])
-    lambda.hat <- n*theta.hat/sum(a+b)
-    return(lambda.hat)
-  }
-  A <- AWX$A
-  W <- AWX$W
-  X <- AWX$X
+  A <- dati$A
+  W <- dati$W
+  X <- dati$X
   n <- length(W)
   Theta <- c(0,10^3) #Search range
   d <- acc*2
@@ -763,7 +724,7 @@ atomicSim <- function(n,lambda_0, gamma,theta, eta =1, mu = 1, s ){
 #' Compute log-likelihood from a dataset A,W,X
 #'
 #'
-#' @param AWX dataframe with columns A,W,X
+#' @param dati dataframe with columns A,W,X
 #' @param gamma
 #' @param lambda_0
 #' @param theta
@@ -772,10 +733,10 @@ atomicSim <- function(n,lambda_0, gamma,theta, eta =1, mu = 1, s ){
 #' @export
 #'
 #' @examples
-ithLL <- function(AWX,gamma,lambda_0,theta){
+ithLL <- function(dati,gamma,lambda_0,theta){
 
   params <- c(gamma,lambda_0,theta)
-  negMean <- negLogLikelihoodMean(params = params, AWX = AWX)
+  negMean <- negLogLikelihoodMean(params = params, dati = dati)
   return(negMean)
 }
 
@@ -862,7 +823,7 @@ readAWXFiles <- function(path = getwd()){
 
 #' Evaluate the log likelihood function over a grid of parameter values
 #'
-#' @param AWX a dataset A,W,X
+#' @param dati a dataset A,W,X
 #' @param grid a grid of parameters
 #'
 #' @return
@@ -870,11 +831,11 @@ readAWXFiles <- function(path = getwd()){
 #'
 #' @examples
 
-evaluateGridFromRealization <- function(AWX, grid){
+evaluateGridFromRealization <- function(dati, grid){
   # prepare the data:
-  A <- AWX$A
-  W <- AWX$W
-  X <- AWX$X
+  A <- dati$A
+  W <- dati$W
+  X <- dati$X
   A_i = A[-1]
   A_tilde <-c(0,cumsum(A))
   A_tilde <- A_tilde[-length(A_tilde)]
@@ -939,9 +900,9 @@ evaluateGridFromRealization <- function(AWX, grid){
 #'
 #' @examples
 gridFromFilePath <- function(path, grid){
-  AWX <- read.csv(path)
+  dati <- read.csv(path)
   a <- Sys.time()
-  negLogLik <- evaluateGridFromRealization(AWX = AWX,grid = grid)
+  negLogLik <- evaluateGridFromRealization(dati = dati,grid = grid)
   b <- Sys.time()
   timediff <- as.numeric(b-a)
   units <- attributes(b-a)$units
@@ -955,7 +916,7 @@ gridFromFilePath <- function(path, grid){
 
 
 
-#' Evaluate MLE's  from AWX data
+#' Evaluate MLE's (Boris and Liron) from AWX file
 #'
 #' @param path a AWX.csv file path
 #' @param grid output of makeParGrid()
@@ -965,10 +926,10 @@ gridFromFilePath <- function(path, grid){
 #'
 #' @examples
 mleFromFilePath <- function(path){
-  AWX <- read.csv(path)
+  dati <- read.csv(path)
 
-  boris <- mleBoris(AWX = AWX,PARAMS = PARAMS)
-  liron <- mleLironThetaLambda(AWX = AWX)
+  boris <- mleBoris(dati = dati,PARAMS = PARAMS)
+  liron <- mleLironThetaLambda(dati = dati)
   mles <- c(boris,liron)
   mles
 

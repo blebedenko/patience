@@ -4,10 +4,10 @@
 \alias{ithLL}
 \title{Compute log-likelihood from a dataset A,W,X}
 \usage{
-ithLL(dati, gamma, lambda_0, theta)
+ithLL(AWX, gamma, lambda_0, theta)
 }
 \arguments{
-\item{dati}{dataframe with columns A,W,X}
+\item{AWX}{dataframe with columns A,W,X}
 }
 \value{
 
