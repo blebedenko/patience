@@ -268,7 +268,7 @@ filenamer(n_obs = 1000,
 #' Function to make many files with simulation results
 #'
 #' @param path Absolute path of the folder to create the files in (will be set to wd)
-#' @param N_files Desired number of files to be created in the working directory
+#' @param N_files Desired number of files to be created in the folder `path`
 #' @param n_obs Number of effective arrivals per file. Defaults to 10,000. Do not use less than 5000.
 #' @param gamma The periodic arrival rate maximum amplitude
 #' @param lambda_0 The constant arrival rate
@@ -283,8 +283,8 @@ filenamer(n_obs = 1000,
 #' @export
 #'
 #' @examples
-makeSimFilesAWX <- function(path,
-                            n.cores = parallel::detectCores() - 2,
+makeSimFilesAWX <- function(dir_path,
+                            n_cores,
                             N_files,
                             n_obs,
                             gamma,
@@ -293,7 +293,9 @@ makeSimFilesAWX <- function(path,
                             s,
                             eta,
                             mu){
-  cl <- makeCluster(n.cores) # make a parallel cluster
+  dir.create(path = dir_path)
+  setwd(dir_path)
+  cl <- makeCluster(n_cores) # make a parallel cluster
   doParallel::registerDoParallel(cl=cl)
   foreach::foreach(i= 1:N_files,
                    .combine = c,
@@ -319,6 +321,7 @@ makeSimFilesAWX <- function(path,
                      write.csv(dat,file = name,row.names = FALSE)
                    }
   stopCluster(cl)
+  setwd("..") # go to the previous folder
 }
 
 

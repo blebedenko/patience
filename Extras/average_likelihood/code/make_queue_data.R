@@ -6,14 +6,11 @@ library(simsalapar)
 library(parallel)
 library(patience)
 library(pbapply)
-<<<<<<< HEAD
 setwd("~/patience/Extras/average_likelihood/results/gamma = 1 lambda_0 = 2 theta = 1")# lambda = 10 gamma = 40 theta = 1.5
 Target_files <- 1000 # number of realization per folder
-=======
 
 # lambda = 10 gamma = 40 theta = 1.5
 Target_files <- 500 # number of realization per folder
->>>>>>> ec5635570904e47e6f626a25dcbcc9ec78830570
 
 N_files <- 60 # number of files per iteration
 
@@ -21,25 +18,19 @@ eta <- 1
 mu <- 1
 # EB (Job size epxectation)eta/mu
 n <- 100000
-<<<<<<< HEAD
 gamma <- 1 # smaller  periodic input
 lambda_0 <- 2
 theta <-  1
-=======
 gamma <- 1 # bigger periodic input
 lambda_0 <- 2
 theta <- 1
->>>>>>> ec5635570904e47e6f626a25dcbcc9ec78830570
 PARAMS <-c(gamma=gamma,lambda_0=lambda_0,theta=theta)
 
 
 # s = 1 -------------------------------------------------------------------
 
 s <- 1
-<<<<<<< HEAD
 (rho <-   (0:2*gamma/2 + lambda_0) / (s*eta/mu))
-=======
->>>>>>> ec5635570904e47e6f626a25dcbcc9ec78830570
 path <-  paste0("./realizations for s=",s)
 dir.create(path=path)
 setwd(path)
@@ -59,7 +50,6 @@ rm(s)
 setwd("..") #one folder up
 
 
-<<<<<<< HEAD
 # s = 2 -------------------------------------------------------------------
 
 
@@ -89,11 +79,9 @@ setwd("..") #one folder up
 
 s <- 3
 (rho <-   (0:2*gamma/2 + lambda_0) / (s*eta/mu))
-=======
 
 
 # s = 2 -------------------------------------------------------------------
->>>>>>> ec5635570904e47e6f626a25dcbcc9ec78830570
 
 s <- 2
 path <-  paste0("./realizations for s=",s)
@@ -137,19 +125,11 @@ rm(s)
 setwd("..") #one folder up
 
 
-<<<<<<< HEAD
-
-=======
->>>>>>> ec5635570904e47e6f626a25dcbcc9ec78830570
 # s = 5 -------------------------------------------------------------------
 
 
 s <- 5
-<<<<<<< HEAD
 (rho <-   (0:2*gamma/2 + lambda_0) / (s*eta/mu))
-=======
->>>>>>> ec5635570904e47e6f626a25dcbcc9ec78830570
-
 path <-  paste0("./realizations for s=",s)
 dir.create(path=path)
 setwd(path)
