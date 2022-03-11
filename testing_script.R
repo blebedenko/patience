@@ -14,9 +14,9 @@ library(doParallel)
 
 eta <- 1
 mu <- 1
-s <- 6
+s <- 1
 # EB (Job size epxectation)eta/mu
-n <- 2000
+n <- 10
 gamma <- 1
 lambda_0 <- 10
 theta <- 1
@@ -27,9 +27,13 @@ PARAMS <- c(gamma = gamma,lambda_0=lambda_0,theta = theta)
 tic()
 RES <- resSimCosine(n=n,gamma = gamma,lambda_0 = lambda_0,theta = theta,s = s,eta = eta,mu = mu)
 toc()
+
 AWX <-RES2AWX(RES)
-
-
+undebug(resSimCosine.Initial)
+RES2 <- resSimCosine.Initial(initial_RES = RES,n=n,gamma = gamma,lambda_0 = lambda_0,theta = theta,s = s,eta = eta,mu = mu)
+RES2
+RES$Q.trans
+RES2$Q.trans
 # Data Generation ---------------------------------------------------------
 dir()
 

@@ -228,10 +228,217 @@ resSimCosine <- function(n, gamma, lambda_0, theta, s, eta, mu){
     cat("* ")
   RES <- list(Aj=Aj,Xj=Xj,Wj=Wj,Qj=Qj,
               IPj=IPj,Q.trans=Q.trans,IT.times=IT.times,
-              Yj = Yj, klok = klok, Pl = Pl, Nl = Nl)
+              Yj = Yj, klok = klok, Pl = Pl, Nl = Nl, Res.service = Res.service)
 
   return(RES)
 }
+
+
+#' Enhanced simulation function (cosine model)
+#' @param gamma The periodic arrival rate maximum amplitude
+#' @param lambda_0 The constant arrival rate
+#' @param theta Parameter of the exponential patience
+#' @param eta Shape parameter of job size.
+#' @param mu Rate parameter of job size.
+#' @param s Number of servers.
+#' @param n Number of samples to generate.
+#' @param RES Results of a previous simulation.
+#' @return A list with the estimates
+#' @details This function can accept a list of initial conditions and resume the
+#' system from that state.
+#' @export
+#' @examples
+resSimCosine.Initial <- function(initial_RES,n, gamma, lambda_0, theta, s, eta, mu, RES){
+  #find the supremum of the arrival function
+  lambda_sup <- lambda_0 + gamma
+  lambdaFunction <-   RATE(gamma = gamma, lambda_0 = lambda_0)
+  # Simulation variables at initial coniditio RES
+  klok <- initial_RES$klok[length(initial_RES$klok)]
+  n.counter <- 0 #Observation counter
+  Res.service <- initial_RES$Res.service
+  Q.length <- initial_RES$Q.trans[initial_RES$Q.trans] #Queue length (including service)
+  initial_RES.service <- initial_RES$Res.service #Vector of residual service times
+  virtual.wait <- VW(Res.service,s) #Virtual wait in initial conditions
+  m <- 0 #Total customer counter
+  #A <- rexp(1,lambda) #First arrival time
+  A <- nextArrivalCosine(klok[length(klok)],  gamma, lambda_0)
+  A <- A - klok[length(klok)]
+  klok <- c(klok, klok[length(klok)] + A)
+  trans.last <- A #Counter of time since last transition
+  time.last <- A #Counter of time since last admission event
+
+
+  #Output vectors:
+  Wj <- rep(NA,n) #Vector of workloads before jumps
+  Xj <- rep(NA,n) #Vector of workload jumps
+  Aj <- rep(NA,n) #Vector of effective inter-arrival times
+  Qj <- rep(NA,n) #Vector of queue lengths at arrival times
+  IPj <- A #Vector of idle periods
+  Yj <- rep(NA,n) # Vector of patience values of customers that join
+  Q.trans <- initial_RES$Q.trans[length(initial_RES$Q.trans)] #Vector of queue lengths at transitions
+  IT.times <- numeric(0) #Vector of inter-transition times
+  Pl <- initial_RES$Pl #Proportion of lost customers
+  Nl <- initial_RES$Nl # number of lost customers
+
+
+  while(n.counter < n+1)
+  {
+    m <- m+1
+    customer <- customerExp(theta = theta, eta = eta, mu = mu)
+    #Generate patience and job size:
+    B <- customer$Jobsize
+    Y <- customer$Patience
+    if(virtual.wait <= Y) #New customer if patience is high enough
+    {
+
+      n.counter <- n.counter+1 #Count observation
+      Res.service <- c(Res.service,B) #Add job to residual service times vector
+      Q.length <- length(Res.service) #Queue length
+      Q.trans <- c(Q.trans,Q.length) #Add current queue length
+      #Add new observations:
+      Wj[n.counter] <- virtual.wait
+      Aj[n.counter] <- time.last
+      Qj[n.counter] <- Q.length-1 #Queue length (excluding new arrival)
+      Yj[n.counter] <- Y # patience of the customer arriving
+      IT.times <- c(IT.times,trans.last) #Update transition time
+      trans.last <- 0 #Reset transition time
+      time.last <- 0 #Reset last arrival time
+      Pl <- m*Pl/(m+1) #Update loss proportion
+    }else { Pl <- m*Pl/(m+1)+1/(m+1)
+    Nl <- Nl + 1}
+
+    #Update system until next arrival event
+    #A <- rexp(1,lambda) #Next arrival time
+    A <- nextArrivalCosine(klok[length(klok)],  gamma, lambda_0)
+    A <- A - klok[length(klok)]
+    klok <- c(klok, klok[length(klok)] + A)
+    time.last <- time.last+A #Add arrival time to effective arrival time
+
+    #Departure and residual service times of customers in the system:
+    Q.length <- length(Res.service) #Queue length
+    D.times <- rep(NA,Q.length) #Departure times
+    Vw <- rep(NA,Q.length) #Virtual waiting times
+    for(i in 1:Q.length)
+    {
+      if(i <= s)
+      {
+        Vw[i] <- 0 #No virtual waiting time
+        D.times[i] <- Res.service[i] #Departure time is the residual service time
+        Res.service[i] <- max(Res.service[i]-A,0) #Update residual service time
+      }else
+      {
+        D.i <- sort(D.times[1:i]) #Sorted departures of customers ahead of i
+        Vw[i] <- D.i[i-s] #Time of service start for customer i
+        D.times[i] <- Res.service[i]+Vw[i] #Departure time
+        serv.i <- max(0,A-Vw[i]) #Service obtained before next arrival
+        Res.service[i] <- max(Res.service[i]-serv.i,0) #New residual service
+      }
+    }
+    #Jump of virtual waiting time:
+    if(virtual.wait <= Y)
+    {
+      if(Q.length < s)
+      {
+        Xj[n.counter] <- 0
+      }else
+      {
+        Xj[n.counter] <- sort(D.times)[Q.length+1-s]-virtual.wait
+      }
+    }
+    #Update residual service times:
+    Res.service <- Res.service[!(Res.service == 0)] #Remove completed services
+
+    #Update transition times and queue lengths:
+    D.before <- which(D.times <= A) #Departing customers before next arrival
+    if(length(D.before) > 0)
+    {
+      T.d <- sort(D.times[D.before]) #Sorted departure times
+      for(i in 1:length(D.before))
+      {
+        Q.trans <- c(Q.trans,Q.length-i) #Update queue length at departures
+        if(i ==1)
+        {
+          trans.last <- trans.last+T.d[1] #Update time since last transition
+          IT.times <- c(IT.times,trans.last) #Departure transition time
+          trans.last <- 0 #Reset transition time
+        }else
+        {
+          trans.last <- trans.last+T.d[i]-T.d[i-1] #Update time since last transition
+          IT.times <- c(IT.times,trans.last) #Departure transition time
+          trans.last <- 0 #Reset transition time
+        }
+        if(Q.trans[length(Q.trans)] == 0){IPj <- cbind(IPj,A-T.d[length(T.d)])} #Add idle time observation
+      }
+      trans.last <- A-T.d[i] #Update remaining time until next arrival
+    }else if (length(D.before) == 0 )
+    {
+      trans.last <- trans.last+A #Update timer since least transition with new arrival
+    }
+    virtual.wait <- VW(Res.service,s) #Update virtual waiting time
+
+  }
+  # progress bar
+  if (m%%1000 == 0 )
+    cat("* ")
+  RES <- list(Aj=Aj,Xj=Xj,Wj=Wj,Qj=Qj,
+              IPj=IPj,Q.trans=Q.trans,IT.times=IT.times,
+              Yj = Yj, klok = klok, Pl = Pl, Nl = Nl, Res.service = Res.service)
+
+  return(RES)
+}
+
+#' Simulation of big sample sizes, by parts
+#'
+#' @param obs_per_sim how many observations are simulated at a time (default = 500)
+#' @param n_obs what is the desired n (default = 100,000)
+#' @param gamma
+#' @param lambda_0
+#' @param theta
+#' @param s
+#' @param eta
+#' @param mu
+#'
+#' @return
+#' @export
+#'
+#' @examples
+resSimBIG <- function(n_obs = 1e5, obs_per_sim = 500, gamma, lambda_0, theta, s, eta, mu){
+  n_sims <- ceiling(n_obs / obs_per_sim) # how many simulations are required to achieve n_obs
+  n <- obs_per_sim # to stay consistent with package argument names
+  # The first results:
+  initial_RES <- resSimCosine(n=n,
+                              gamma = gamma,
+                              lambda_0 = lambda_0,
+                              theta = theta,
+                              s = s,
+                              eta = eta,
+                              mu = mu)
+
+  d1 <- RES2AWX(RES)
+  last_RES <- initial_RES
+  # the other simulations:
+
+  for (i in 2:n_sims){
+    next_RES <- resSimCosine.Initial(initial_RES = last_RES,
+                                     n=n,
+                                     gamma = gamma,
+                                     lambda_0 = lambda_0,
+                                     theta = theta,
+                                     s = s,
+                                     eta = eta,
+                                     mu = mu)
+    if (i %% 10 == 0)
+      cat("Sim no.", i, as.character(lubridate::now()),"\n")
+
+    d2 <- RES2AWX(next_RES) # take the data
+    d1 <- d1 %>% dplyr::bind_rows(d2) # run over the d1 data
+    last_RES <- next_RES
+  }
+  return(last_RES)
+
+}
+
+
 
 #' Utility: turn RES to AWX
 #'
@@ -300,13 +507,23 @@ makeSimFilesAWX <- function(dir_path,
   foreach::foreach(i= 1:N_files,
                    .combine = c,
                    .packages = "patience") %dopar% {
-                     RES <- resSimCosine(n=n_obs,
-                                         gamma = gamma,
-                                         lambda_0 = lambda_0,
-                                         theta = theta,
-                                         s = s,
-                                         eta = eta,
-                                         mu = mu)
+                     # RES <- resSimCosine(n=n_obs,
+                     #                     gamma = gamma,
+                     #                     lambda_0 = lambda_0,
+                     #                     theta = theta,
+                     #                     s = s,
+                     #                     eta = eta,
+                     #                     mu = mu)
+                     #
+                     RES <- resSimBIG(n_obs = n_obs,
+                               obs_per_sim = 500,
+                               gamma = gamma,
+                               lambda_0 = lambda_0,
+                               theta = theta,
+                               s = s,
+                               eta = eta,
+                               mu = mu)
+
                      A <- RES$A
                      W <- RES$Wj
                      X <- RES$Xj
