@@ -9,6 +9,17 @@ library(pbapply)
 library(doParallel)
 
 
+
+
+# Installation ------------------------------------------------------------
+
+devtools::install_github("blebedenko/patience")
+library(patience)
+library(tidyverse)
+library(parallel)
+library(doParallel)
+
+patience::makeAWXDirectories()
 # Simulation --------------------------------------------------------------
 
 

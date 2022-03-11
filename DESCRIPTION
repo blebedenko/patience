@@ -8,6 +8,16 @@ Description: More about what it does (maybe more than one line)
 License: What license is it under?
 Encoding: UTF-8
 LazyData: true
-Imports: tidyverse, doParallel, parallel, pbapply, filenamer
-Suggests: tictoc
+Imports: 
+    tidyverse,
+    parallel,
+    foreach,
+    iterators,
+    doParallel,
+    pbapply,
+    tictoc,
+    svDialogs
+Suggests: 
+    shiny,
+    shinyDashboard
 RoxygenNote: 7.1.2

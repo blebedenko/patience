@@ -450,6 +450,20 @@ resSimBIG <- function(n_obs = 1e5, obs_per_sim = 500, gamma, lambda_0, theta, s,
 #' @examples
 RES2AWX <- function(RES) {return(data.frame(A=RES$Aj,W=RES$Wj,X=RES$Xj))}
 
+#' Utility: name the individual simulation results
+#'
+#' @param n_obs
+#' @param gamma
+#' @param lambda_0
+#' @param theta
+#' @param s
+#' @param eta
+#' @param mu
+#'
+#' @return
+#' @export
+#'
+#' @examples
 filenamer <- function(n_obs, gamma, lambda_0, theta, s, eta, mu){
   name <- (paste0("AWX_",
                   "s=",s,
