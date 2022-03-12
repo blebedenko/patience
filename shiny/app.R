@@ -69,14 +69,14 @@ ui <- dashboardPage(
   ),
   ## Body ----
   dashboardBody(fluidRow(
-  ### Plots -----
-      box(title = "The sim",
+    ### Plots -----
+    box(title = "The sim",
         tableOutput("PARAMS"),
         plotOutput("plot1"),
         plotOutput("plot_rate")
-        ),
-box(title = "The data",
-plotOutput("plot_res")
+    ),
+    box(title = "The data",
+        plotOutput("plot_res")
     )
   ))
 )
@@ -86,7 +86,7 @@ plotOutput("plot_res")
 
 server <- function(input, output) {
 
-# geenrate queue data:
+  # geenrate queue data:
 
   RES <- reactive({
 
@@ -101,13 +101,13 @@ server <- function(input, output) {
     eta <- 1 %>% as.numeric()
     mu <- 1 %>% as.numeric()
     nservers <- 5 %>% as.numeric()
-    n.obs <- 1000 %>% as.numeric()
+    n_obs <- 1000 %>% as.numeric()
     gamma <- 10 %>% as.numeric()
     lambda_0 <- 10 %>% as.numeric()
     theta <- 1 %>% as.numeric()
     PARAMS <- c(gamma,lambda_0,theta)
 
-    RES <- resSimCosine(n=n.obs,gamma = gamma,lambda_0 = lambda_0,theta = theta,s = nservers,eta = eta,mu = mu)
+    RES <- resSimCosine(n = n_obs,gamma = gamma,lambda_0 = lambda_0,theta = theta,s = nservers,eta = eta,mu = mu)
     RES$Aj
   })
 
@@ -118,7 +118,7 @@ server <- function(input, output) {
   output$AWX <- renderTable(data.frame(1))
 
   output$plot_res <- renderPlot({plot(RES())})
-    # output$plot1 <- renderPlot({
+  # output$plot1 <- renderPlot({
   #   RES1 <- RES()
   #   hist(RES1$Aj)
   #     })
