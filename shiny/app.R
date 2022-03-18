@@ -1,5 +1,5 @@
 ## app.R ##
-
+setwd("~/patience/shiny")
 library(shiny)
 library(shinydashboard)
 library(plotly)
@@ -8,7 +8,7 @@ library(filenamer)
 library(patience)
 
 # read average likelihood data:
-d3 <- read_csv("C3_lik_grid_n=50000.csv")
+d3 <- read.csv("C3_lik_grid_n=50000.csv")
 # Shiny -------------------------------------------------------------------
 
 
@@ -20,9 +20,9 @@ d3 <- read_csv("C3_lik_grid_n=50000.csv")
 
 ui <- shinydashboard::dashboardPage(
   ### Header ----
-  dashboardHeader(title = "tit"),
+  shinydashboard::dashboardHeader(title = "tit"),
   ### Sidebar ----
-  dashboardSidebar(
+  shinydashboard::dashboardSidebar(
     title = 'Set parameters and press "Simulate"',
 
     ### inputs regarding the simulation ----
@@ -88,9 +88,8 @@ ui <- shinydashboard::dashboardPage(
 
   ),
   ## Body ----
-  dashboardBody(
-    fluidRow(
-    ### Plots -----
+  shinydashboard::dashboardBody(fluidRow(
+    ### Queue statisics -----
     box(
       title = "Arrivals and queue length",
       collapsible = TRUE,
@@ -107,41 +106,56 @@ ui <- shinydashboard::dashboardPage(
       collapsible = TRUE,
       plotOutput("plot_hourly_queue")
     ),
-    box(title = "Likelihood (known arrival rate)",collapsible = TRUE,
-        h4("The likelihoods are averages (instead of sums)"),
-        plotOutput("likelihood")
-  ),
-  ### Estimation ----
-  fluidRow(
     box(
-      title = "Parameter estimation",
+      title = "Likelihood (known arrival rate)",
       collapsible = TRUE,
-      h4("True parameter values:"),
-      tableOutput("true_parameters"),
-      h4("Boris (all parameters uknown):"),
-      tableOutput("estimates_Boris"),
-      hr(),
-      h4("Boris (arrival rate function known):"),
-      tableOutput("estimates_Known_Arrival"),
-      hr(),
-      h4("Liron:"),
-      tableOutput("estimates_Liron")
+      h4("The likelihoods are averages (instead of sums)"),
+      plotOutput("likelihood")
     ),
-    box(title = "Queue statistics",
-        "what")
-  ),
-  ### Average likelihood ------
-  fluidRow(
-    column(
-      h3("Average likelihood function"),width = 12
+    ### Estimation ----
+    fluidRow(
+      box(
+        title = "Parameter estimation",
+        collapsible = TRUE,
+        h4("True parameter values:"),
+        tableOutput("true_parameters"),
+        h4("Boris (all parameters uknown):"),
+        tableOutput("estimates_Boris"),
+        hr(),
+        h4("Boris (arrival rate function known):"),
+        tableOutput("estimates_Known_Arrival"),
+        hr(),
+        h4("Liron:"),
+        tableOutput("estimates_Liron")
+      ),
+      box(title = "Queue statistics",
+          "what")
     ),
-    box(title = "Case 3",
+    ### Average likelihood ------
+    fluidRow(
+      column(h3("Average likelihood function"), width = 12),
+      box(
+        title = "Case 3",
 
-        radioButtons(inputId = "case",label = "Which simulation case?",choices = c("C1","C2","C3"))),
-numericInput(inputId = "ave_s",label = "no. servers",value = 1,min = 1,max = 100,step = 1L),
+        radioButtons(
+          inputId = "case",
+          label = "Which simulation case?",
+          choices = c("C1", "C2", "C3")
+        )
+        ,
+        numericInput(
+          inputId = "ave_s",
+          label = "no. servers",
+          value = 1,
+          min = 1,
+          max = 100,
+          step = 1L
+        ),
         plotOutput("plotLikelihood_C3")
+      )
+
+    )
   ))
-)
 )
 
 # Server ------------------------------------------------------------------
@@ -261,13 +275,17 @@ server <- function(input, output) {
   ## Average Likelihood -----
 
 
-  output$plotLikelihood_C3 <- renderPlotly({
-    dat <- d3 %>% select(1:3, contains(as.character(input$ave_s)))
-    p1 <- plot_ly(x=~gamma,y=~lambda_0,z=~nLL_s1,type="mesh3d",data =d3,split = factor(d3$theta ),
-                  contour = list(show = TRUE,color = "#001",width = 5), opacity = 0.5)
-    p1
-  }
-  )
+  output$plotLikelihood_C3 <- plotly::renderPlotly({
+         plot_ly(
+        x  = d3$gamma,
+        y = d3$lambda_0,
+        z = d3$nLL_s1 ,
+        split = factor(d3$theta),
+        type = "mesh3d"
+      )
+
+
+  })
 
 
 

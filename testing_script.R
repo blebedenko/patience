@@ -20,17 +20,17 @@ lambda_0 <- 2
 theta <- 1
 (rho <- (gamma + lambda_0 / 2) * eta / (s * mu))
 PARAMS <- c(gamma,lambda_0,theta)
-r3 <-
-  resSimCosine2(n_obs = 1e3,
-                gamma = gamma,
-                lambda_0 = lambda_0,
-                theta = theta,
-                s = s,
-                eta = eta,
-                mu = mu
-  ) %>% tik
+R <- resSimBIG(n_thousands = n %/% 1000L,
+               gamma = gamma,
+               lambda_0 = lambda_0,
+               theta = theta,
+               s = s,
+               eta = eta,
+               mu = mu
+               )
 
-E0 <- r3
+
+
 
 grid <- makeParGrid(params = PARAMS,spans = c(0.5,0.5,0.5),grid.sizes = c(20,20,5))
 paths <- dir(path = "patience/results/C3/n=50K/realizations for s=1",full.names = T)[1:20]

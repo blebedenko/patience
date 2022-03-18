@@ -597,8 +597,6 @@ resSimBIG <-
 #' @examples
 makeAWXDirectories <- function() {
   setwd(svDialogs::dlg_dir()$res) # set the directory to where pointed
-  n_cores <-
-    as.numeric(readline(prompt = "How many cores to use? "))
   n_obs <-
     as.numeric(readline(prompt = "n (sample size) = : "))
   N_files <- as.numeric(readline(prompt = "How many files? "))
@@ -662,26 +660,8 @@ makeAWXDirectories <- function() {
         paste0("realizations for s=", s, "/")
       dir.create(path = curr_dirname)
       setwd(curr_dirname)
-      cl <- parallel::makeCluster(n_cores) # make a parallel cluster
-      doParallel::registerDoParallel(cl = cl)
-      cat(paste0(as.character(Sys.time()), " Starting now.\n", collapse = " "))
 
-      L <- foreach::foreach(
-        i = 1:N_files,
-        .combine = c,
-        .packages = c("patience", "tidyverse")
-      ) %dopar% {
-        s
-        # RES <- resSimCosine(
-        #   n = n_obs,
-        #   gamma = gamma,
-        #   lambda_0 = lambda_0,
-        #   theta = theta,
-        #   s = s,
-        #   eta = eta,
-        #   mu = mu
-        # )
-
+      for (k in 1:N_files){
         RES <- resSimBIG(
           n_thousands = n_obs %/% 1000,
           gamma = gamma,
@@ -708,22 +688,17 @@ makeAWXDirectories <- function() {
 
         write.csv(dat, file = name, row.names = FALSE)
       }
-      parallel::stopCluster(cl)
       setwd("..") # go to the previous folder
-
-
-
       cat("done with s = ", s, "...", "\n")
 
-      mean(0) # just a filler so "return" of foreach won't be NULL
-    }
+      }
+
+  }
+  cat(paste0(as.character(Sys.time()), " Finished!\n", collapse = " "))
+
 
   }
 
-  cat(paste0(as.character(Sys.time()), " Finished!\n", collapse = " "))
-  return(L)
-
-}
 
 
 # Plotting  ---------------------------------------------------------------
