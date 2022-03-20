@@ -95,6 +95,9 @@ ui <- shinydashboard::dashboardPage(
       collapsible = TRUE,
       plotOutput("plot_queue")
 
+
+
+
     ),
     box(
       title = "Arrivals by patience",
@@ -151,7 +154,7 @@ ui <- shinydashboard::dashboardPage(
           max = 100,
           step = 1L
         ),
-        plotOutput("plotLikelihood_C3")
+        plotlyOutput("plotLikelihood_C3")
       )
 
     )

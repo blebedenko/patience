@@ -597,6 +597,8 @@ resSimBIG <-
 #' @examples
 makeAWXDirectories <- function() {
   setwd(svDialogs::dlg_dir()$res) # set the directory to where pointed
+  n_cores <-
+    as.numeric(readline(prompt = "How many cores to use? "))
   n_obs <-
     as.numeric(readline(prompt = "n (sample size) = : "))
   N_files <- as.numeric(readline(prompt = "How many files? "))
@@ -660,45 +662,51 @@ makeAWXDirectories <- function() {
         paste0("realizations for s=", s, "/")
       dir.create(path = curr_dirname)
       setwd(curr_dirname)
+     cat(paste0(as.character(Sys.time()), " Starting now.\n", collapse = " "))
+cl <- makeCluster(n_cores)
+registerDoParallel(cl)
+foreach(i = 1:N_files,.packages = c("tidyverse","patience"),.combine = list) %dopar%{
+  RES <- resSimBIG(
+    n_thousands = n_obs %/% 1000,
+    gamma = gamma,
+    lambda_0 = lambda_0,
+    theta = theta,
+    s = s,
+    eta = eta,
+    mu = mu
+  )
 
-      for (k in 1:N_files){
-        RES <- resSimBIG(
-          n_thousands = n_obs %/% 1000,
-          gamma = gamma,
-          lambda_0 = lambda_0,
-          theta = theta,
-          s = s,
-          eta = eta,
-          mu = mu
-        )
+  dat <- RES # resSimBIG returns only AWX currently
+  name <- filenamer(
+    n_obs = n_obs,
+    gamma = gamma,
+    lambda_0 = lambda_0,
+    s = s,
+    eta = eta,
+    mu = mu
+  )
 
-        A <- RES$Aj
-        W <- RES$Wj
-        X <- RES$Xj
-        dat <- data.frame(A = A, W = W, X = X)
-        name <- filenamer(
-          n_obs = n_obs,
-          gamma = gamma,
-          lambda_0 = lambda_0,
-          theta = theta,
-          s = s,
-          eta = eta,
-          mu = mu
-        )
+  write.csv(dat, file = name, row.names = FALSE)
 
-        write.csv(dat, file = name, row.names = FALSE)
-      }
+}
+stopCluster(cl)
+stopImplicitCluster()
+gc()
+   }
+
       setwd("..") # go to the previous folder
+
+
+
       cat("done with s = ", s, "...", "\n")
 
-      }
+    }
 
   }
+
   cat(paste0(as.character(Sys.time()), " Finished!\n", collapse = " "))
 
-
-  }
-
+}
 
 
 # Plotting  ---------------------------------------------------------------
