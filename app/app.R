@@ -2,6 +2,8 @@
 library(shiny)
 library(plotly)
 library(tidyverse)
+if (!require(patience))
+  devtools::install_github("blebedenko/patience")
 library(patience)
 
 # Data --------------------------------------------------------------------
