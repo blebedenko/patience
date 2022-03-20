@@ -706,7 +706,6 @@ gc()
 
   cat(paste0(as.character(Sys.time()), " Finished!\n", collapse = " "))
 
-}
 
 
 # Plotting  ---------------------------------------------------------------
