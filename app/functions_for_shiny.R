@@ -294,15 +294,15 @@ resSimCosine <- function(n, gamma, lambda_0, theta, s, eta, mu) {
 #' Simulate results, possibly from given initial state
 #'
 #' @param E0 Optional argument - A list with results from a previous simulation
-#' @param n Number of samples to generate.
-#' @param gamma The periodic arrival rate maximum amplitude
-#' @param lambda_0 The constant arrival rate
-#' @param theta Parameter of the exponential patience
-#' @param eta Shape parameter of job size.
-#' @param mu Rate parameter of job size.
-#' @param s Number of servers.
+#' @param n
+#' @param gamma
+#' @param lambda_0
+#' @param theta
+#' @param s
+#' @param eta
+#' @param mu
 #'
-#' @return same as resSimCosine
+#' @return
 #' @export
 #'
 #' @examples
@@ -531,11 +531,11 @@ resSimCosineContinue <-
 #' @param s
 #' @param eta
 #' @param mu
-#' @return AWX dataframe
+#' @return
 #' @export
 #'
 #' @examples
-resSimAWX <-
+resSimBIG <-
   function(n_thousands,
            gamma,
            lambda_0,
@@ -662,135 +662,53 @@ makeAWXDirectories <- function() {
         paste0("realizations for s=", s, "/")
       dir.create(path = curr_dirname)
       setwd(curr_dirname)
-      cat(paste0(as.character(Sys.time()), " Starting now.\n", collapse = " "))
-      cl <- makeCluster(n_cores)
-      registerDoParallel(cl)
-      foreach(
-        i = 1:N_files,
-        .packages = c("tidyverse", "patience"),
-        .combine = list
-      ) %dopar% {
-        RES <- resSimAWX(
-          n_thousands = n_obs %/% 1000,
-          gamma = gamma,
-          lambda_0 = lambda_0,
-          theta = theta,
-          s = s,
-          eta = eta,
-          mu = mu
-        )
+     cat(paste0(as.character(Sys.time()), " Starting now.\n", collapse = " "))
+cl <- makeCluster(n_cores)
+registerDoParallel(cl)
+foreach(i = 1:N_files,.packages = c("tidyverse","patience"),.combine = list) %dopar%{
+  RES <- resSimBIG(
+    n_thousands = n_obs %/% 1000,
+    gamma = gamma,
+    lambda_0 = lambda_0,
+    theta = theta,
+    s = s,
+    eta = eta,
+    mu = mu
+  )
 
-        dat <- RES # resSimAWX returns only AWX currently
-        name <- filenamer(
-          n_obs = n_obs,
-          gamma = gamma,
-          lambda_0 = lambda_0,
-          s = s,
-          eta = eta,
-          mu = mu
-        )
+  dat <- RES # resSimBIG returns only AWX currently
+  name <- filenamer(
+    n_obs = n_obs,
+    gamma = gamma,
+    lambda_0 = lambda_0,
+    s = s,
+    eta = eta,
+    mu = mu
+  )
 
-        write.csv(dat, file = name, row.names = FALSE)
-
-      }
-      stopCluster(cl)
-      stopImplicitCluster()
-      gc()
-    }
-
-    setwd("..") # go to the previous folder
-
-
-
-    cat("done with s = ", s, "...", "\n")
-
-  }
-  cat(paste0(as.character(Sys.time()), " Finished!\n", collapse = " "))
+  write.csv(dat, file = name, row.names = FALSE)
 
 }
+stopCluster(cl)
+stopImplicitCluster()
+gc()
+   }
 
+      setwd("..") # go to the previous folder
+
+
+
+      cat("done with s = ", s, "...", "\n")
+
+    }
+
+  }
+
+  cat(paste0(as.character(Sys.time()), " Finished!\n", collapse = " "))
 
 
 
 # Plotting  ---------------------------------------------------------------
-
-#' Plot given Arrivals and Queue Length Changes
-#'
-#' @param A Vector of arrival times
-#' @param Q.trans vector of queue length at transitions
-#' @param pch what character to use for arrivals
-#'
-#' @export
-pltQueueAtArrivals <- function(A,
-                               Q.trans,
-                               IT.times,
-                               pch = 4) {
-  transitions <- cumsum(IT.times)
-  A_tilde <- cumsum(A)
-  Q.trans <-
-    Q.trans[-length(Q.trans)] # the last element is removed
-
-
-  plot(
-    transitions,
-    Q.trans,
-    type = 's',
-    lwd = 0.5,
-    ylim = range(pretty(c(0, max(
-      Q.trans
-    )))),
-    xlab = "time",
-    ylab = "No. customers",
-    col = "darkgreen",
-    main = "Queue length @ effective arrivals"
-  )
-
-  stripchart(A_tilde,
-             at = .01,
-             add = T,
-             pch = pch)
-
-  legend(
-    x = "topleft",
-    legend = c("No. Customers",  "Effective arrival"),
-    col = c("darkgreen", "black"),
-    lty = c(1, NA),
-    lwd = c(2, 1),
-    pch = c(NA, pch)
-  )
-
-}
-
-
-
-#' Plot statistics for one arrival cycle
-#'
-#' @param RES
-#' @param start_time The number of the cycle (1, 2, etc.)
-#'
-#' @return
-#' @export
-#'
-#' @examples
-pltOneCycle <- function(RES, start_time) {
-  A <- RES$Aj # start from 0
-  A_tilde <- cumsum(A)
-  Q.trans <- RES$Q.trans[-length(RES$Q.trans)]
-  IT.times <- RES$IT.times
-
-  A_cycle <-
-    A[A_tilde >= start_time & A_tilde <= (start_time + 1)]
-  transitions <- cumsum(IT.times)
-  Q_cycle <-
-    Q.trans[transitions >= start_time &
-              transitions <= (start_time + 1)]
-  IT_cycle <-
-    IT.times[transitions >= start_time &
-               transitions <= (start_time + 1)]
-  pltQueueAtArrivals(A = A_cycle,
-                     Q.trans = Q_cycle,
-                     IT.times = IT_cycle)
-}
 
 
 
@@ -1005,7 +923,7 @@ pltQueueByHourPerc <- function(RES, n_quantiles = 4) {
 #' @return The negative log-likelihood at the point provided.
 #' @export
 #'
-ave_neg_likelihoodMean <- function(params, AWX) {
+negLogLikelihoodMean <- function(params, AWX) {
   gamma <- params[1]
   lambda_0 <- params[2]
   theta <- params[3]
@@ -1046,7 +964,7 @@ ave_neg_likelihoodMean <- function(params, AWX) {
 
 
 
-gradave_neg_likelihoodMean <- function(params, AWX) {
+gradNegLogLikelihoodMean <- function(params, AWX) {
   gamma <- params[1]
   lambda_0 <- params[2]
   theta <- params[3]
@@ -1128,19 +1046,18 @@ mleBoris <- function(AWX, PARAMS) {
     optim(
       PARAMS,
       # note that PARAMS is temporary
-      fn = ave_neg_likelihoodMean,
+      fn = negLogLikelihoodMean,
       lower = PARAMS / 10,
       upper = PARAMS * 10,
       method = "L-BFGS-B",
-      gr = gradave_neg_likelihoodMean,
+      gr = gradNegLogLikelihoodMean,
       AWX = AWX
     )
-  is_boundary <- any((opt$par == PARAMS / 10) |
-                       (opt$par == PARAMS * 10))
+
 
   ans <- opt$par
   names(ans) <- c("gamma", "lambda_0", "theta")
-  return(list(ans = ans, boundary = is_boundary))
+  return(ans)
 }
 
 ## Known Arrival rate ------
@@ -1154,7 +1071,7 @@ mleBoris <- function(AWX, PARAMS) {
 #' @return The negative log-likelihood at the point provided.
 #' @export
 #'
-ave_neg_likelihoodMean.KnownArrival <-
+negLogLikelihoodMean.KnownArrival <-
   function(theta.vec, params, AWX) {
     gamma <- params[1]
     lambda_0 <- params[2]
@@ -1205,7 +1122,7 @@ ave_neg_likelihoodMean.KnownArrival <-
 mleKnownArrival <- function(AWX, params) {
   mle <-
     optimize(
-      ave_neg_likelihoodMean.KnownArrival,
+      negLogLikelihoodMean.KnownArrival,
       interval = c(0.1, 100),
       params = params,
       AWX = AWX
@@ -1333,7 +1250,7 @@ atomicSim <- function(n,
 #' @examples
 ithLL <- function(AWX, gamma, lambda_0, theta) {
   params <- c(gamma, lambda_0, theta)
-  negMean <- ave_neg_likelihoodMean(params = params, AWX = AWX)
+  negMean <- negLogLikelihoodMean(params = params, AWX = AWX)
   return(negMean)
 }
 
@@ -1518,13 +1435,13 @@ evaluateGridFromRealization <- function(AWX, grid) {
 gridFromFilePath <- function(path, grid, csv = FALSE) {
   AWX <- read.csv(path)
   a <- Sys.time()
-  ave_neg_lik <- evaluateGridFromRealization(AWX = AWX, grid = grid)
+  negLogLik <- evaluateGridFromRealization(AWX = AWX, grid = grid)
   b <- Sys.time()
   timediff <- as.numeric(b - a)
   units <- attributes(b - a)$units
   cat("Start @:", a, "Stop @:", b, "time diff. of", timediff, units, "\n")
   res <- grid
-  res$ave_neg_lik <- ave_neg_lik
+  res$negLogLik <- negLogLik
 
   if (csv) {
     timestamp <- substr(path, nchar(path) - 18, nchar(path) - 4)
@@ -1548,14 +1465,11 @@ gridFromFilePath <- function(path, grid, csv = FALSE) {
 #' @export
 #'
 #' @examples
-mleFromFilePath <- function(path, PARAMS) {
+mleFromFilePath <- function(path) {
   AWX <- read.csv(path)
   boris <- mleBoris(AWX = AWX, PARAMS = PARAMS)
-  boris_estimates <- boris$ans
-  boris_boundary <- boris$boundary
   liron <- mleLironThetaLambda(AWX = AWX)
-  mles <-
-    c(boris_estimates, 'boundary' = as.integer(boris_boundary), liron)
+  mles <- c(boris, liron)
   mles
 
 }
@@ -1571,194 +1485,96 @@ mleFromFilePath <- function(path, PARAMS) {
 #' @export
 #'
 #' @examples
-estimateFolder <- function(AWX_folder, grid, PARAMS) {
-  paths <-
-    dir(AWX_folder, full.names = TRUE)[str_detect(dir(AWX_folder), "AWX")] #makes sure only AWX files are read
-  folder_s <- # number of servers from the directory name
-    AWX_folder %>%
-    str_split("/") %>%
-    last() %>%
-    last()  %>% # should be names "realizations for s = "
-    str_split("=", simplify = T) %>%
-    last()
+estimateFolder <- function(grid, PARAMS, write_summary = TRUE) {
+  paths <- dir(full.names = TRUE)
+  MLE <- tibble()
+  LG <- list()
+  i <- 1
+  for (path in paths) {
+    cat(i, "\n")
+    # write the corresponding likelihood grid file:
+    # gridFromFilePath(path = path,
+    #                  grid = grid,
+    #                  csv = TRUE)
+    # save the MLE's
 
-  for (curr_path in paths) {
-    #cat(curr_path,"\n")
-    # extract the timestamp:
-    timestamp <- str_split(curr_path, "=", simplify = T) %>%
-      last() %>%
-      str_extract_all("[^csv]") %>%
-      unlist()
-    # remove dots:
-    timestamp <- timestamp[-which(timestamp == ".")] %>% str_flatten()
-    # make filename
-    filename <- paste0("lik_grid_s=", folder_s, "_", timestamp, ".csv")
-    # get the likelihoods for the current grid:
-    curr_grid <- gridFromFilePath(path = curr_path, grid = grid)
-    # write the file at the folder
-    write.csv(curr_grid, file = filename, row.names = FALSE)
+    # experiment
+    LG[[i]] <-  gridFromFilePath(path = path,
+                                 grid = grid,
+                                 csv = FALSE)
+
+    # save the MLE's
+
+    MLE <- MLE %>% bind_rows(mleFromFilePath(path = path))
+    i <- i + 1
   }
+
+  negLL <- list()
+  for (k in 1:length(LG)) {
+    negLL[[k]] <- LG[[k]] %>% pull(negLogLik)
+  }
+
+  aveNegLogLik <- rowMeans(Reduce(cbind, negLL))
+  ans <- grid %>%
+    bind_cols(aveNegLogLik)
+
+  if (write_summary) {
+    write.csv(x = ans,
+              file = "likelihood_grid.csv",
+              row.names = FALSE)
+    write.csv(x = MLES,
+              file = "MLE.csv",
+              row.names = FALSE)
+
+  }
+
+
+  return(list(MLE = MLE, likGrid = ans))
+
+
 }
+
 
 
 #' Estimate from all subfolders
 #'
 #' @param grid
 #' @param PARAMS
-#' @param folder_names full names of the folders (get with dir(full.names=T)). If null, it
-#' tries on its own to match folders with the std name pattern "realizations for s=1"
 #'
 #' @return
 #' @export
 #'
 #' @examples
-estimateALL <- function(grid, PARAMS, folder_names = NULL) {
-  if (is.null(folder_names)) {
-    dir_names <- dir(full.names = TRUE)
-    folders <- dir_names %>% str_detect("realizations")
-    folder_names <- dir_names[folders]
-  }
-
-  SS <- str_extract(folder_names, "\\d+") %>% as.numeric()
+estimateALL <- function(grid, PARAMS) {
+  folder_names <- dir() # folder names like 'realizations for n=3'
+  SS <- parse_number(folder_names)
   for (w in 1:length(folder_names)) {
     curr_folder <- folder_names[w]
-    cat(as.character(Sys.time()),
-        "now working on",
-        curr_folder,
-        "\n")
+    setwd(curr_folder)
     curr_s <- SS[w]
+    L <-
+      estimateFolder(grid = grid,
+                     PARAMS = PARAMS,
+                     write_summary = FALSE)
+    cat("done with", curr_folder, "\n")
+    cat("writing summaries in ", getwd())
+    write.csv(
+      x = L$likGrid,
+      file = paste0("likelihood_grid_s=", curr_s, ".csv")
+      ,
+      row.names = FALSE
+    )
+    write.csv(
+      x = L$MLE,
+      file = paste0("MLE_s=", curr_s, ".csv")
+      ,
+      row.names = FALSE
+    )
 
-    estimateFolder(AWX_folder = curr_folder,
-                   grid = grid,
-                   PARAMS = PARAMS)
-    cat(as.character(Sys.time()), "done with", curr_folder, "\n")
+    setwd("..")
   }
 }
 
-
-#' compute the average likelihood grid
-#'
-#' @param scenario_name
-#'
-#' @return
-#' @export
-#'
-#' @examples
-likGridSummary <- function(scenario_name) {
-  filenames <- dir()
-  grid_files <- filenames[ str_detect(filenames,"lik_grid")]
-  s_values <-
-   grid_files %>% str_extract("\\d") %>% as.numeric() %>% unique()
-  files_by_s <- split(grid_files, s_values)
-
-  res_list <- list()
-  for (i in 1:length(s_values)) {
-    curr_s_liks <- files_by_s[[s_values[i]]]
-    curr_s_liks <- lapply(curr_s_liks, read.csv)
-
-    A <- purrr::reduce(curr_s_liks,
-                       left_join,
-                       by = c("gamma", "lambda_0", "theta"))
-
-    ave_neg_lik <- A %>% select(contains("neg_lik")) %>% rowMeans()
-
-    dat_s_lik <- A %>%
-      select(gamma, lambda_0, theta) %>%
-      bind_cols(ave_neg_lik = ave_neg_lik) %>%
-      bind_cols(s = s_values[i])
-
-    res_list[[i]] <- dat_s_lik
-    names(res_list)[i] <- paste0("s=", s_values[i])
-  }
-
-  # a table with the likelihoods from each file:
-  # in long format which will be convenient for shiny
-  lik_long <- purrr::reduce(res_list, rbind)
-  name_for_summary <-
-    paste0(scenario_name, "_likelihood_averages.csv")
-  write.csv(lik_long, name_for_summary, row.names = FALSE)
-}
-
-
-
-#' Title
-#'
-#' @param PARAMS
-#' @param folder_names
-#'
-#' @return
-#' @export
-#'
-#' @examples
-mleALL <- function(PARAMS, scenario, folder_names = NULL) {
-  mleFolder <- function(AWX_folder) {
-    paths <-
-      dir(AWX_folder, full.names = TRUE)[str_detect(dir(AWX_folder), "AWX")] #makes sure only AWX files are read
-    folder_s <- # number of servers from the directory name
-      AWX_folder %>%
-      str_split("/") %>%
-      last() %>%
-      last()  %>% # should be names "realizations for s = "
-      str_split("=", simplify = T) %>%
-      last()
-
-    res_folder <- list()
-
-    for (j in 1:length(paths)) {
-      curr_path <- paths[j]
-      # extract the timestamp:
-      timestamp <- str_split(curr_path, "=", simplify = T) %>%
-        last() %>%
-        str_extract_all("[^csv]") %>%
-        unlist()
-      # remove dots:
-      timestamp <-
-        timestamp[-which(timestamp == ".")] %>% str_flatten()
-      # make filename
-      filename <- paste0("MLE_s=", folder_s, "_", timestamp, ".csv")
-      # get the MLE for the current grid:
-      curr_mle <- mleFromFilePath(path = curr_path, PARAMS = PARAMS)
-      name <- names(curr_mle)
-      curr_mle <- curr_mle %>% t() %>% as_tibble()
-      # write the file at the folder
-      #write.csv(curr_mle, file = filename,row.names = FALSE)
-      res_folder[[j]] <- curr_mle
-    }
-
-    res_folder <- purrr::reduce(res_folder, bind_rows)
-    res_folder$s <- as.numeric(folder_s)
-    return(res_folder)
-  }
-
-
-  if (is.null(folder_names)) {
-    dir_names <- dir(full.names = TRUE)
-    folders <- dir_names %>% str_detect("realizations")
-    folder_names <- dir_names[folders]
-  }
-  # no. of servers
-  SS <- str_extract(folder_names, "\\d+") %>% as.numeric()
-  mle_ans <- list()
-  for (w in 1:length(folder_names)) {
-    curr_folder <- folder_names[w]
-    cat(as.character(Sys.time()),
-        "now working on MLE in",
-        curr_folder,
-        "\n")
-    curr_s <- SS[w]
-
-    curr_mles <- mleFolder(AWX_folder = curr_folder)
-    # filename <- paste0("mle_s=",curr_s,".csv")
-    # write.csv(curr_mles,file = filename,row.names = FALSE)
-    mle_ans[[w]] <- curr_mles
-    cat(as.character(Sys.time()), "done with", curr_folder, "\n")
-  }
-
-  mle_data <- purrr::reduce(mle_ans,
-                             bind_rows)
-  mle_name <- paste0( "MLE_scenario_",scenario,".csv")
-  write.csv(mle_data,nle_name, row.names = FALSE)
-}
 # Utilities ---------------------------------------------------------------
 
 

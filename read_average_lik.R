@@ -1,28 +1,38 @@
-for( curr_folder in dir()){
-  setwd(curr_folder)
-  likelihoods <- dir()[dir() %>% grepl(pattern = "lik_grid", x = .)]
-  L <- lapply(likelihoods,
-              function(filename) read.csv(filename) %>% select(-1))
+# run inside a folder with the mixed likelihoods
+likGridSummary <- function(scenario_name){
+filenames <- dir()
+s_values <- filenames %>% str_extract("\\d+") %>% as.numeric() %>% unique()
+files_by_s <- split(filenames, s_values)
 
-  for (i in 1:length(L)){
-    L[[i]] %>% pull(negLogLik)
-  }
-  setwd("..")
+res_list <- list()
+for(i in 1:length(s_values)){
+  curr_s_liks <- files_by_s[[s_values[i]]]
+  curr_s_liks <- lapply(curr_s_liks, read.csv)
+
+  A <- purrr::reduce(curr_s_liks,
+                     left_join,
+                     by = c("gamma","lambda_0","theta"))
+
+  ave_neg_lik <- A %>% select(contains("neg_lik")) %>% rowMeans()
+
+  dat_s_lik <- A %>%
+    select(gamma,lambda_0,theta) %>%
+    bind_cols(ave_neg_lik = ave_neg_lik) %>%
+    bind_cols(s = s_values[i])
+
+  res_list[[i]] <- dat_s_lik
+  names(res_list)[i] <- paste0("s=",s_values[i])
 }
 
-A <- purrr::reduce(L,
-                   left_join,
-                   by = c("gamma","lambda_0","theta"))
-dim(A)
-# the likelihoods
-liks <- A %>% select(starts_with("neg"))
-ave_neg_lik <- rowMeans(liks)
+# a table with the likelihoods from each file:
+# in long format which will be convenient for shiny
+lik_long <- purrr::reduce(res_list, rbind)
+name_for_summary <- paste0(scenario_name,"_likelihood_averages.csv")
+write.csv(lik_long, name_for_summary,row.names = FALSE)
+}
 
-dat_lik <-
-  A %>% select(gamma,lambda_0,theta) %>%
-  bind_cols(ave_neg_lik = ave_neg_lik)
 
-write.csv(dat_lik,"C2_big_ave_lik.csv",row.names = FALSE)
+
 
 p1 <-
   plot_ly(
