@@ -1757,7 +1757,7 @@ mleALL <- function(PARAMS, scenario, folder_names = NULL) {
   mle_data <- purrr::reduce(mle_ans,
                              bind_rows)
   mle_name <- paste0( "MLE_scenario_",scenario,".csv")
-  write.csv(mle_data,nle_name, row.names = FALSE)
+  write.csv(mle_data,mle_name, row.names = FALSE)
 }
 # Utilities ---------------------------------------------------------------
 
