@@ -59,7 +59,13 @@ R <- resSimBIG(n_thousands = n %/% 1000L,
 
 
 # Estimation --------------------------------------------------------------
-
+library(tictoc)
+library(tidyverse)
+library(simsalapar)
+library(parallel)
+library(patience)
+library(pbapply)
+library(doParallel)
 setwd("~/patience/results/C3/dummy_small")
 gamma <- 1
 lambda_0 <- 2
