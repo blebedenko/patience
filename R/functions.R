@@ -1510,12 +1510,12 @@ evaluateGridFromRealization <- function(AWX, grid) {
 #' @param path a AWX.csv file path
 #' @param grid output of makeParGrid()
 #' @param csv logical indicating whether to write a file
-#'
+#' @param output_folder if provided - the folder where to write csv's
 #' @return
 #' @export
 #'
 #' @examples
-gridFromFilePath <- function(path, grid, csv = FALSE) {
+gridFromFilePath <- function(path, grid, csv = FALSE, output_folder = NULL) {
   AWX <- read.csv(path)
   a <- Sys.time()
   ave_neg_lik <- evaluateGridFromRealization(AWX = AWX, grid = grid)
@@ -1528,8 +1528,11 @@ gridFromFilePath <- function(path, grid, csv = FALSE) {
 
   if (csv) {
     timestamp <- substr(path, nchar(path) - 18, nchar(path) - 4)
-    filename <-
-      paste0("lik_grid_", timestamp, ".csv", collapse = "")
+    name <-  paste0("lik_grid_", timestamp, ".csv", collapse = "")
+    filename <- ifelse(is.null(output_folder),
+                      yes = name,
+                       no = paste0(output_folder,"/",name)
+                      )
     write.csv(res, filename)
   } else
     return(res)
@@ -1636,6 +1639,100 @@ estimateALL <- function(grid, PARAMS, folder_names = NULL) {
 }
 
 
+estimateALL2 <- function(grid, PARAMS, folder_names = NULL) {
+  if (is.null(folder_names)) {
+    dir_names <- dir(full.names = TRUE)
+    folders <- dir_names %>% str_detect("realizations")
+    folder_names <- dir_names[folders]
+  }
+
+  SS <- str_extract(folder_names, "\\d+") %>% as.numeric()
+  for (w in 1:length(folder_names)) {
+    curr_folder <- folder_names[w]
+    cat(as.character(Sys.time()),
+        "now working on",
+        curr_folder,
+        "\n")
+    curr_s <- SS[w]
+    paths <- dir(curr_folder, full.names = TRUE)
+    paths <- paths[paths %>% str_detect("AWX")] # in case there are rogue files
+    PARAMS <- PARAMS ### DANGER
+
+    for (p in  1:length(paths)){
+
+              AWX <- read.csv(paths[p])
+              ave_neg_lik <- evaluateGridFromRealization(AWX = AWX, grid = grid)
+              res <- grid
+              res$ave_neg_lik <- ave_neg_lik
+
+              timestamp <- substr(path, nchar(path) - 18, nchar(path) - 4)
+              name <-  paste0("lik_grid_", timestamp, ".csv", collapse = "")
+              filename <- ifelse(is.null(output_folder),
+                                 yes = name,
+                                 no = paste0(output_folder,"/",name)
+              )
+              write.csv(res, filename, row.names = FALSE)
+            }
+
+    cat(as.character(Sys.time()), "done with", curr_folder, "\n")
+  }
+}
+
+#' parallel version
+#'
+#' @param grid
+#' @param PARAMS
+#' @param folder_names
+#'
+#' @return
+#' @export
+#'
+
+
+#' @examples
+estimateALL.parallel <-
+  function(grid, PARAMS, folder_names = NULL) {
+    if (is.null(folder_names)) {
+      dir_names <- dir(full.names = TRUE)
+
+      folders <- dir_names %>% str_detect("realizations")
+      folder_names <- dir_names[folders]
+    }
+
+    SS <- str_extract(folder_names, "\\d+") %>% as.numeric()
+
+    for (w in 1:length(folder_names)){
+      curr_folder <- folder_names[w]
+      curr_s <- SS[w]
+      cat(as.character(Sys.time()),
+          "now working on",
+          curr_folder,
+          "\n")
+      paths <- dir(curr_folder, full.names = TRUE)
+      paths <- paths[paths %>% str_detect("AWX")] # in case there are rogue files
+      PARAMS <<- PARAMS ### DANGER
+      foreach(p = 1:length(paths),
+              .combine = list,
+              .packages = c("tidyverse","patience")) %dopar%{
+                path <- paths[p]
+                AWX <- read.csv(path)
+                ave_neg_lik <- evaluateGridFromRealization(AWX = AWX, grid = grid)
+                res <- grid
+                res$ave_neg_lik <- ave_neg_lik
+
+                timestamp <- substr(path, nchar(path) - 18, nchar(path) - 4)
+                name <-  paste0("lik_grid_s=",curr_s,"_", timestamp, ".csv", collapse = "")
+
+
+                write.csv(res, name, row.names = FALSE)
+              }
+
+      cat(as.character(Sys.time()), "done with", curr_folder, "\n")
+
+    }
+  }
+
+
 #' compute the average likelihood grid
 #'
 #' @param scenario_name
@@ -1646,9 +1743,9 @@ estimateALL <- function(grid, PARAMS, folder_names = NULL) {
 #' @examples
 likGridSummary <- function(scenario_name) {
   filenames <- dir()
-  grid_files <- filenames[ str_detect(filenames,"lik_grid")]
+  grid_files <- filenames[str_detect(filenames, "lik_grid")]
   s_values <-
-   grid_files %>% str_extract("\\d") %>% as.numeric() %>% unique()
+    grid_files %>% str_extract("\\d") %>% as.numeric() %>% unique()
   files_by_s <- split(grid_files, s_values)
 
   res_list <- list()

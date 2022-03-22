@@ -314,7 +314,8 @@ server <- function(input, output, session) {
     p1
   })
   dumDat <- reactive({
-    dum
+    dum %>%
+      filter(s == input$likelihood_s)
   })
 
   output$likelihood_dummy_plot <- renderPlotly({

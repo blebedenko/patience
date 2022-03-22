@@ -19,18 +19,20 @@ library(parallel)
 library(patience)
 library(pbapply)
 library(doParallel)
-setwd("~/patience/results/C3/dummy_small")
-gamma <- 1
-lambda_0 <- 2
-theta <- 1
+setwd("~/patience/results/c2 - Copy/n=10^4/")
+gamma <- 40
+lambda_0 <- 10
+theta <- 2.5
 PARAMS <- c(gamma,lambda_0,theta)
 grid <- makeParGrid(params = PARAMS,
                     spans = c(0.8,0.8,0.8),
                     grid.sizes = c(25,25,10))
 
-estimateALL(grid = grid,PARAMS = PARAMS)
-likGridSummary("C3")
-mleALL(PARAMS = PARAMS,scenario = "C3")
+
+estimateALL.parallel(grid = grid,PARAMS = PARAMS)
+
+likGridSummary("C2")
+mleALL(PARAMS = PARAMS,scenario = "C2")
 
 a
 eta <- 1
@@ -55,3 +57,32 @@ R <- resSimCosine(n = 5,
                   s = s,
                   eta = eta,
                   mu = mu)
+
+
+
+patience::makeAWXDirectories()
+
+
+library(tictoc)
+library(tidyverse)
+library(parallel)
+library(patience)
+library(pbapply)
+library(doParallel)
+
+
+# Parallel ---------
+#cl <- makeCluster(length(SS)) # a core for each server number
+cl <- makeCluster(8)
+registerDoParallel(cl)
+gamma <- 40
+lambda_0 <- 10
+theta <- 2.5
+PARAMS <- c(gamma,lambda_0,theta)
+grid <- makeParGrid(params = PARAMS,
+                    spans = c(0.8,0.8,0.8),
+                    grid.sizes = c(25,25,10))
+
+setwd("~/patience/results/c2 - Copy/n=10^4")
+estimateALL.parallel(grid = grid, PARAMS = PARAMS)
+stopCluster(cl)
