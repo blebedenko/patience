@@ -1,0 +1,13 @@
+name: impatience
+title: impatience
+username:
+account: boris-uva
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 5365175
+bundleId: 5719655
+url: https://boris-uva.shinyapps.io/impatience/
+when: 1648072252.15162
+lastSyncTime: 1648072252.15164
+asMultiple: FALSE
+asStatic: FALSE

@@ -1049,7 +1049,7 @@ pltLik3D <- function(params, AWX, known, grid_size = 30) {
     M <- plot3D::mesh(Lam,The)
     x_vals <- M$x %>% as.vector()
     y_vals <- M$y %>% as.vector()
-    z_vals <- negL(x_vals,y_vals)
+    z_vals <- negL(x_vals, y_vals)
     # plotly axis names
     axx <- list(title = "lambda_0")
     axy <- list(title = "theta")
@@ -1081,7 +1081,7 @@ pltLik3D <- function(params, AWX, known, grid_size = 30) {
 
   # plotly z-axis:
   axz <- list(title = "neg. log-likelihood")
-  dd <- data.frame(X=x_vals,Y=y_vals,negLik=z_vals)
+  dd <- data.frame(X=x,Y=y,negLik=z)
 
   lik_plot <-
     plot_ly(
@@ -1090,7 +1090,6 @@ pltLik3D <- function(params, AWX, known, grid_size = 30) {
       z =  ~ negLik,
       data = dd,
       type = "mesh3d",
-      opacity = 0.5,
       # contour = list(
       #   show = TRUE,
       #   # color = "#001",
@@ -1132,8 +1131,8 @@ mle <- function(AWX, params, type = "all") {
     names(known_lambda0) <- c("gamma_KL", "theta_KL")
     known_gamma <- mle2Par(params = params,known = "gamma",AWX = AWX)
     names(known_gamma) <- c("lambda_0_KG", "theta_KG")
-    known_theta <- mle2Par(params = params,known = "theta",AWX = AWX)
-    names(known_theta) <- c("gamma_KT","lambda_0_KT")
+    known_theta <- mle2Par(params = params,known = "gamma",AWX = AWX)
+    names(known_theta) <- c("lambda_0_KT", "gamma_KT")
     estimate <-
       c(boris,
         liron,
@@ -1143,7 +1142,7 @@ mle <- function(AWX, params, type = "all") {
         known_theta)
 
   }
-    return(data.frame(estimate))
+    return(data.frame(ans))
 }
 
 #' Make two-parameter likelihood
@@ -1403,11 +1402,11 @@ negLogLikFactory <- function(gamma, lambda_0, theta, AWX, known = NULL, vector_i
     return(negLikGT)
   }
   if(known == "theta"){
-    negLikGL <- Vectorize(FUN = ave_neg_likelihoodMean_nonvector,
+    negLik <- Vectorize(FUN = ave_neg_likelihoodMean_nonvector,
                           vectorize.args = c("gamma","lambda_0"),
                           SIMPLIFY = TRUE)
-    negLikGL <- partial(negLikGL, AWX = AWX, theta = theta)
-    return(negLikGL)
+    negLik <- partial(negLikGL, AWX = AWX, theta = theta)
+    return(negLik)
   }
   if(known == "arrival"){
     stop("not ready yet")
@@ -2519,14 +2518,13 @@ mleALL <- function(PARAMS, scenario, folder_names = NULL) {
 
     curr_mles <- mleFolder(AWX_folder = curr_folder)
     mle_ans[[w]] <- curr_mles
-    mle_data <- purrr::reduce(mle_ans,
-                              bind_rows)
-    mle_name <- paste0("MLE_scenario_", scenario,"_s=",curr_s, ".csv")
-    write.csv(mle_data, mle_name, row.names = FALSE)
     cat(as.character(Sys.time()), "done with", curr_folder, "\n")
   }
 
-
+  mle_data <- purrr::reduce(mle_ans,
+                            bind_rows)
+  mle_name <- paste0("MLE_scenario_", scenario, ".csv")
+  write.csv(mle_data, mle_name, row.names = FALSE)
 }
 
 

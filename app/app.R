@@ -7,11 +7,10 @@ source("functions_for_shiny.R")
 # Data --------------------------------------------------------------------
 
 #dat_lik <- read.csv('C2_big_likelihood.csv')
-dat_lik <- read.csv('C2_big_ave_lik.csv')
 
-dat_mle <- read.csv('C2_big_mle.csv')
+dat_mle <- read.csv("MLE_scenario_C2.csv" )
 
-dum <- read.csv("C3_likelihood_averages.csv")
+dum <- read.csv("C2_likelihood_averages.csv" )
 # Functions ---------------------------------------------------------------
 
 # no. of servers from scenario
@@ -116,12 +115,14 @@ ui <-
           tableOutput("simulation_estimates")
         )
 
-      )
+      ),
+      plotOutput("simulation_known_likelihood")
+
     ),
 
     ## Likelihood panel ----
     tabPanel(
-      title = "Likelihood",
+      title = "Average Likelihood",
 
       h4("Choose a scenario to plot the average likelihood function"),
       h5("For each scenario, select number of servers"),
@@ -133,13 +134,8 @@ ui <-
           label = "select scenario:",
           choices = paste0("C", 1:3)
         ),
-        ### sample size per iteration:
-        radioButtons(
-          inputId = "likelihood_sample_size",
-          label = "sample size (thousands)",
-          choices = c(10, 100)
-        ),
-        ### no. of servers
+
+        ### no. of servers (updated by scenario)
         radioButtons(
           inputId = "likelihood_s",
           label = "no. servers",
@@ -158,7 +154,14 @@ ui <-
       "Estimator performance",
       tableOutput("performance_summary"),
       plotOutput("performance_scatter")
-    )
+    ),
+
+    ## Known parameters panel
+
+    tabPanel(title = "Known parameters"),
+    h1("Estimation with known parameters")
+
+
 
   )
 
@@ -247,6 +250,21 @@ server <- function(input, output, session) {
     pltQueueByHourPerc(RES())
   })
 
+
+  output$simulation_known_likelihood <- renderPlot({
+    curve(
+      negLogLikelihoodMean.KnownArrival(
+        theta.vec = x,
+        params = c(input$gamma, input$lambda_0),
+        AWX = AWX()
+      ),
+      from = input$theta / 4,
+      to = input$theta * 4,
+      ylab = "-LogLik",
+      xlab = expression(theta)
+    )
+  })
+
   ### Point Estimation ----
 
   output$simulation_estimates <- renderTable({
@@ -281,13 +299,6 @@ server <- function(input, output, session) {
 
   observe(input$likelihood_s)
 
-  # the dataset corresponding to user selection
-  # currDat <- reactive({
-  #   s_formatted <- paste0("s_",input$likelihood_s)
-  #   dat_lik %>%
-  #     select(gamma,lambda_0,s_formatted) %>%
-  #     rename(ave_neg_lik = s_formatted)
-  # })
 
   currDat <- reactive({
     dat_lik
@@ -319,14 +330,15 @@ server <- function(input, output, session) {
   })
 
   output$likelihood_dummy_plot <- renderPlotly({
+    dat <- dumDat()
     p1 <-
       plot_ly(
         x =  ~ gamma,
         y =  ~ lambda_0,
         z =  ~ ave_neg_lik,
-        split = factor(dat_lik$theta),
+        split = factor(dat$theta),
         type = "mesh3d",
-        data = dumDat(),
+        data = dat,
         contour = list(
           show = TRUE,
           color = "#001",
